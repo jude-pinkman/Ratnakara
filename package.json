@@ -1,0 +1,32 @@
+{
+  "name": "marine-data-platform",
+  "version": "1.0.0",
+  "description": "AI-Driven Unified Marine Data Platform",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "setup": "npm install --workspaces && cd ml-service && python -m venv venv",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:ml": "cd ml-service && source venv/bin/activate && python main.py",
+    "build": "npm run build --workspaces",
+    "seed": "cd backend && npm run seed",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f"
+  },
+  "keywords": [
+    "marine",
+    "oceanography",
+    "fisheries",
+    "edna",
+    "ai",
+    "ml",
+    "data-platform"
+  ],
+  "author": "",
+  "license": "MIT"
+}

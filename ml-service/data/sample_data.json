@@ -1,0 +1,137 @@
+{
+  "ocean_stations": [
+    {
+      "location": "Station-1",
+      "latitude": 15.2993,
+      "longitude": 74.123,
+      "region": "Arabian Sea",
+      "temperature": 28.5,
+      "salinity": 35.2,
+      "ph": 8.1,
+      "oxygen": 6.8,
+      "depth": 150
+    },
+    {
+      "location": "Station-2",
+      "latitude": 13.0827,
+      "longitude": 80.2707,
+      "region": "Bay of Bengal",
+      "temperature": 29.2,
+      "salinity": 34.5,
+      "ph": 8.0,
+      "oxygen": 7.2,
+      "depth": 120
+    }
+  ],
+  "fisheries_records": [
+    {
+      "species": "Sardinella longiceps",
+      "common_name": "Indian Oil Sardine",
+      "abundance": 5200,
+      "biomass": 2600,
+      "location": "Fishing-Zone-1",
+      "latitude": 15.3,
+      "longitude": 74.1,
+      "region": "Arabian Sea",
+      "diversity_index": 0.82
+    },
+    {
+      "species": "Rastrelliger kanagurta",
+      "common_name": "Indian Mackerel",
+      "abundance": 4800,
+      "biomass": 2400,
+      "location": "Fishing-Zone-2",
+      "latitude": 13.1,
+      "longitude": 80.3,
+      "region": "Bay of Bengal",
+      "diversity_index": 0.78
+    }
+  ],
+  "edna_samples": [
+    {
+      "species": "Thunnus albacares",
+      "concentration": 45.8,
+      "depth": 80,
+      "location": "eDNA-Site-1",
+      "latitude": 15.5,
+      "longitude": 74.2,
+      "confidence": 92.5,
+      "season": "Winter",
+      "region": "Arabian Sea"
+    },
+    {
+      "species": "Katsuwonus pelamis",
+      "concentration": 38.2,
+      "depth": 95,
+      "location": "eDNA-Site-2",
+      "latitude": 13.2,
+      "longitude": 80.4,
+      "confidence": 88.7,
+      "season": "Summer",
+      "region": "Bay of Bengal"
+    }
+  ],
+  "taxonomy_records": [
+    {
+      "kingdom": "Animalia",
+      "phylum": "Chordata",
+      "class": "Actinopterygii",
+      "order": "Clupeiformes",
+      "family": "Clupeidae",
+      "genus": "Sardinella",
+      "species": "Sardinella longiceps",
+      "common_name": "Indian Oil Sardine",
+      "description": "Small pelagic fish found in tropical waters"
+    },
+    {
+      "kingdom": "Animalia",
+      "phylum": "Chordata",
+      "class": "Actinopterygii",
+      "order": "Perciformes",
+      "family": "Scombridae",
+      "genus": "Rastrelliger",
+      "species": "Rastrelliger kanagurta",
+      "common_name": "Indian Mackerel",
+      "description": "Important commercial fish species in Indian waters"
+    }
+  ],
+  "regions": [
+    "Bay of Bengal",
+    "Arabian Sea",
+    "Indian Ocean",
+    "Andaman Sea",
+    "Lakshadweep Sea"
+  ],
+  "seasons": [
+    "Winter",
+    "Spring",
+    "Summer",
+    "Monsoon"
+  ],
+  "environmental_parameters": {
+    "temperature": {
+      "min": 24,
+      "max": 32,
+      "optimal": 28,
+      "unit": "°C"
+    },
+    "salinity": {
+      "min": 32,
+      "max": 37,
+      "optimal": 34.5,
+      "unit": "PSU"
+    },
+    "ph": {
+      "min": 7.8,
+      "max": 8.3,
+      "optimal": 8.1,
+      "unit": "pH"
+    },
+    "oxygen": {
+      "min": 4.5,
+      "max": 8.5,
+      "optimal": 7.0,
+      "unit": "mg/L"
+    }
+  }
+}
