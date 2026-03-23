@@ -6,7 +6,12 @@ import fisheriesRoutes from './routes/fisheries.js';
 import ednaRoutes from './routes/edna.js';
 import taxonomyRoutes from './routes/taxonomy.js';
 import correlationRoutes from './routes/correlation.js';
-import forecastRoutes from './routes/forecast.js';
+import forecastMlRoutes from './routes/forecast-ml.js';
+import uploadRoutes from './routes/upload.js';
+import insightsRoutes from './routes/insights.js';
+import biodiversityRoutes from './routes/biodiversity.js';
+import geospatialRoutes from './routes/geospatial.js';
+import alertsRoutes from './routes/alerts.js';
 
 dotenv.config();
 
@@ -14,21 +19,48 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// Health check
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+// Health check with system info
+app.get('/health', async (req, res) => {
+  const healthInfo = {
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    version: '2.0.0',
+    services: {
+      api: 'operational',
+      database: 'checking...'
+    }
+  };
+
+  // Check database connectivity
+  try {
+    const { query } = await import('./db/connection.js');
+    await query('SELECT 1');
+    healthInfo.services.database = 'operational';
+  } catch (error) {
+    healthInfo.services.database = 'unavailable';
+  }
+
+  res.json(healthInfo);
 });
 
-// API Routes
+// API Routes - Core Data
 app.use('/api/ocean', oceanRoutes);
 app.use('/api/fisheries', fisheriesRoutes);
 app.use('/api/edna', ednaRoutes);
 app.use('/api/taxonomy', taxonomyRoutes);
 app.use('/api/correlation', correlationRoutes);
-app.use('/api/forecast', forecastRoutes);
+app.use('/api/forecast', forecastMlRoutes);
+app.use('/api/upload', uploadRoutes);
+
+// API Routes - Advanced Analytics
+app.use('/api/insights', insightsRoutes);
+app.use('/api/biodiversity', biodiversityRoutes);
+app.use('/api/geo', geospatialRoutes);
+app.use('/api/alerts', alertsRoutes);
 
 // Chatbot endpoint
 app.post('/api/chatbot', async (req, res) => {

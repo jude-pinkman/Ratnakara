@@ -79,7 +79,7 @@ router.post('/generate', async (req: Request, res: Response) => {
     const predictions = await mlResponse.json();
 
     // Store predictions
-    for (const pred of predictions) {
+    for (const pred of (predictions as any[])) {
       await query(
         `INSERT INTO forecasts (species, forecast_date, predicted_abundance, confidence_interval_low, confidence_interval_high, model_version)
          VALUES ($1, $2, $3, $4, $5, $6)`,

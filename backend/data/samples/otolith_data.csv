@@ -1,0 +1,21 @@
+occurrenceID,fish_id,species,age_years,age_confidence,fish_total_length_cm,fish_weight_g,sr_ca_ratio,pb_concentration_ppb,ba_concentration_ppb,zn_concentration_ppb,mg_concentration_ppb,mn_concentration_ppb,fe_concentration_ppb,delta_18_o_permil,delta_13_c_permil,otolith_width_mm,otolith_height_mm,otolith_weight_mg,otolith_preservation,collection_location,analyst_name
+OTO-2026-001,SL-001,Sardinella longiceps,2,high,18.5,85,0.0028,0.12,2.45,8.5,125.6,3.8,45.2,-2.85,-8.2,3.2,2.1,12.5,clear,Chennai,Dr. Sharma
+OTO-2026-002,SL-002,Sardinella longiceps,3,high,21.2,112,0.0031,0.15,2.68,9.2,132.4,4.1,48.6,-2.72,-7.9,3.8,2.4,15.2,clear,Chennai,Dr. Sharma
+OTO-2026-003,SL-003,Sardinella longiceps,1,medium,14.8,52,0.0025,0.08,2.12,7.1,118.2,3.2,38.5,-3.05,-8.6,2.6,1.8,8.4,clear,Chennai,Dr. Sharma
+OTO-2026-004,RK-001,Rastrelliger kanagurta,3,high,24.5,165,0.0035,0.18,3.15,10.8,145.8,4.8,52.4,-2.45,-7.5,4.2,2.8,18.6,clear,Mangalore,Dr. Pillai
+OTO-2026-005,RK-002,Rastrelliger kanagurta,4,high,28.2,225,0.0038,0.22,3.42,12.4,158.2,5.2,56.8,-2.32,-7.2,4.8,3.2,22.4,clear,Mangalore,Dr. Pillai
+OTO-2026-006,RK-003,Rastrelliger kanagurta,2,high,19.8,98,0.0029,0.12,2.85,8.9,128.6,3.9,44.2,-2.68,-7.8,3.4,2.2,13.8,moderate,Mangalore,Dr. Pillai
+OTO-2026-007,TA-001,Thunnus albacares,5,high,85.5,9800,0.0042,0.28,4.25,18.5,185.4,6.8,72.5,-1.95,-6.8,12.5,8.2,125.6,clear,Port Blair,Dr. Mukherjee
+OTO-2026-008,TA-002,Thunnus albacares,4,high,72.8,6200,0.0039,0.24,3.95,16.2,172.8,6.1,65.8,-2.08,-7.1,10.8,7.1,98.4,clear,Port Blair,Dr. Mukherjee
+OTO-2026-009,TA-003,Thunnus albacares,6,medium,98.5,15200,0.0045,0.32,4.58,21.4,198.6,7.5,82.4,-1.82,-6.5,14.2,9.4,158.2,moderate,Port Blair,Dr. Mukherjee
+OTO-2026-010,KP-001,Katsuwonus pelamis,3,high,52.4,2850,0.0036,0.19,3.28,12.8,152.4,5.4,58.2,-2.25,-7.0,7.8,5.2,52.6,clear,Vizhinjam,Dr. Nair
+OTO-2026-011,KP-002,Katsuwonus pelamis,4,high,62.8,4200,0.0040,0.23,3.65,14.5,165.8,5.9,64.5,-2.12,-6.8,9.2,6.1,68.4,clear,Vizhinjam,Dr. Nair
+OTO-2026-012,SG-001,Scomberomorus guttatus,4,high,68.5,4800,0.0041,0.25,3.82,15.8,172.4,6.2,68.2,-2.02,-6.6,9.8,6.5,78.5,clear,Goa,Dr. Fernandes
+OTO-2026-013,SG-002,Scomberomorus guttatus,5,high,82.4,7200,0.0044,0.29,4.15,18.2,188.6,6.9,75.8,-1.88,-6.4,11.4,7.6,102.4,clear,Goa,Dr. Fernandes
+OTO-2026-014,SG-003,Scomberomorus guttatus,3,medium,55.2,2950,0.0037,0.20,3.45,13.4,158.2,5.6,62.4,-2.18,-6.9,8.2,5.5,58.6,moderate,Goa,Dr. Fernandes
+OTO-2026-015,LC-001,Lates calcarifer,5,high,78.5,6800,0.0043,0.27,4.08,17.5,182.4,6.6,72.8,-1.92,-6.7,11.8,7.8,112.5,clear,Sundarbans,Dr. Banerjee
+OTO-2026-016,LC-002,Lates calcarifer,6,high,92.4,10200,0.0046,0.31,4.45,20.8,195.8,7.2,82.5,-1.78,-6.3,13.5,9.0,142.8,clear,Sundarbans,Dr. Banerjee
+OTO-2026-017,LC-003,Lates calcarifer,4,high,65.8,4250,0.0039,0.22,3.75,15.2,168.4,5.8,65.4,-2.05,-6.8,9.5,6.3,75.6,moderate,Sundarbans,Dr. Banerjee
+OTO-2026-018,EM-001,Epinephelus malabaricus,6,high,58.5,4500,0.0044,0.28,4.12,18.4,185.2,6.8,74.5,-1.85,-6.5,8.5,5.6,85.4,clear,Mandapam,Dr. Krishnan
+OTO-2026-019,EM-002,Epinephelus malabaricus,7,medium,68.2,6200,0.0047,0.32,4.48,21.2,198.4,7.4,82.8,-1.72,-6.2,10.2,6.8,108.6,moderate,Mandapam,Dr. Krishnan
+OTO-2026-020,NJ-001,Nemipterus japonicus,3,high,22.5,145,0.0032,0.14,2.85,9.8,138.6,4.2,48.5,-2.62,-7.6,3.8,2.5,14.8,clear,Mumbai,Dr. Deshmukh

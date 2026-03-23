@@ -1,0 +1,26 @@
+species,common_name,year,country,location,latitude,longitude,abundance,biomass,region,recorded_at
+Sardinella longiceps,Indian Oil Sardine,2023,India,Bay of Bengal - Zone 1,12.5,88.3,2500,1200,Bay of Bengal,2026-03-20
+Sardinella longiceps,Indian Oil Sardine,2023,India,Bay of Bengal - Zone 2,14.2,86.5,2800,1350,Bay of Bengal,2026-03-20
+Sardinella longiceps,Indian Oil Sardine,2023,India,Arabian Sea - Zone 1,15.8,72.5,1900,950,Arabian Sea,2026-03-20
+Rastrelliger kanagurta,Indian Mackerel,2023,India,Bay of Bengal - Zone 1,12.5,88.3,1800,900,Bay of Bengal,2026-03-20
+Rastrelliger kanagurta,Indian Mackerel,2023,India,Arabian Sea - Zone 1,15.8,72.5,2100,1050,Arabian Sea,2026-03-20
+Rastrelliger kanagurta,Indian Mackerel,2023,India,Arabian Sea - Zone 2,16.2,71.8,1950,975,Arabian Sea,2026-03-20
+Thunnus albacares,Yellowfin Tuna,2023,India,Bay of Bengal - Zone 3,18.5,89.2,450,1800,Bay of Bengal,2026-03-20
+Thunnus albacares,Yellowfin Tuna,2023,India,Andaman Sea,10.5,94.5,380,1520,Andaman Sea,2026-03-20
+Thunnus albacares,Yellowfin Tuna,2023,India,Arabian Sea - Zone 3,17.5,70.2,420,1680,Arabian Sea,2026-03-20
+Katsuwonus pelamis,Skipjack Tuna,2023,India,Bay of Bengal - Zone 4,16.8,87.5,650,1300,Bay of Bengal,2026-03-19
+Katsuwonus pelamis,Skipjack Tuna,2023,India,Andaman Sea,11.2,95.8,580,1160,Andaman Sea,2026-03-19
+Scomberomorus guttatus,Indo-Pacific King Mackerel,2023,India,Bay of Bengal - Zone 2,14.2,86.5,950,1425,Bay of Bengal,2026-03-19
+Scomberomorus guttatus,Indo-Pacific King Mackerel,2023,India,Arabian Sea - Zone 2,16.2,71.8,1100,1650,Arabian Sea,2026-03-19
+Penaeus monodon,Giant Tiger Prawn,2023,India,Lakshadweep Sea,10.8,72.5,320,384,Lakshadweep Sea,2026-03-19
+Penaeus monodon,Giant Tiger Prawn,2023,India,Bay of Bengal - Zone 1,12.5,88.3,450,540,Bay of Bengal,2026-03-19
+Metapenaeus dobsoni,Kadal Shrimp,2023,India,Arabian Sea - Zone 1,15.8,72.5,1200,480,Arabian Sea,2026-03-19
+Metapenaeus dobsoni,Kadal Shrimp,2023,India,Bay of Bengal - Zone 3,18.5,89.2,1050,420,Bay of Bengal,2026-03-19
+Lates calcarifer,Barramundi,2023,India,Andaman Sea,9.8,94.2,280,1120,Andaman Sea,2026-03-18
+Lates calcarifer,Barramundi,2023,India,Bay of Bengal - Zone 4,16.8,87.5,320,1280,Bay of Bengal,2026-03-18
+Epinephelus malabaricus,Malabar Grouper,2023,India,Arabian Sea - Zone 3,17.5,70.2,180,900,Arabian Sea,2026-03-18
+Sardinella longiceps,Indian Oil Sardine,2022,India,Bay of Bengal - Zone 1,12.5,88.3,2400,1150,Bay of Bengal,2026-03-18
+Rastrelliger kanagurta,Indian Mackerel,2022,India,Bay of Bengal - Zone 1,12.5,88.3,1700,850,Bay of Bengal,2026-03-18
+Thunnus albacares,Yellowfin Tuna,2022,India,Bay of Bengal - Zone 3,18.5,89.2,420,1680,Bay of Bengal,2026-03-18
+Katsuwonus pelamis,Skipjack Tuna,2022,India,Andaman Sea,11.2,95.8,550,1100,Andaman Sea,2026-03-18
+Penaeus monodon,Giant Tiger Prawn,2022,India,Lakshadweep Sea,10.8,72.5,300,360,Lakshadweep Sea,2026-03-18
