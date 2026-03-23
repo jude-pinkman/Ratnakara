@@ -40,29 +40,19 @@ A comprehensive full-stack platform integrating oceanographic data, fisheries mo
 
 - Node.js 18+ and npm
 - Python 3.10+
-- PostgreSQL 14+
+- Neon PostgreSQL project (or PostgreSQL 14+ for local fallback)
 - Git
 
 ### 1. Database Setup
 
 ```bash
-# Install PostgreSQL (if not already installed)
-# Windows: Download from https://www.postgresql.org/download/windows/
-# macOS: brew install postgresql
-# Linux: sudo apt-get install postgresql
-
-# Start PostgreSQL service
-# Windows: Start via Services or pgAdmin
-# macOS/Linux: sudo service postgresql start
-
-# Create database
-psql -U postgres
-CREATE DATABASE marine_data;
-\q
+# Create a Neon project and copy the connection string.
+# Example format:
+# postgresql://user:password@host/dbname?sslmode=require&channel_binding=require
 
 # Run schema
 cd marine-data-platform/backend
-psql -U postgres -d marine_data -f src/db/schema.sql
+psql "${DATABASE_URL}" -f src/db/schema.sql
 ```
 
 ### 2. Backend Setup
@@ -73,7 +63,10 @@ cd marine-data-platform/backend
 # Copy environment file
 cp .env.example .env
 
-# Update .env with your PostgreSQL credentials
+# Update .env with your Neon connection string
+# DATABASE_URL=postgresql://user:password@host/dbname?sslmode=require&channel_binding=require
+
+# Optional local fallback variables
 # DB_HOST=localhost
 # DB_PORT=5432
 # DB_NAME=marine_data
@@ -97,8 +90,8 @@ Backend will run on `http://localhost:3001`
 ```bash
 cd marine-data-platform/ml-service
 
-# Create virtual environment
-python -m venv venv
+# Create virtual environment with Python 3.10 (required)
+python3.10 -m venv venv
 
 # Activate virtual environment
 # Windows:
@@ -279,9 +272,9 @@ uvicorn main:app --host 0.0.0.0 --port 8000
 ## Troubleshooting
 
 ### Database Connection Issues
-- Verify PostgreSQL is running
-- Check credentials in `.env`
-- Ensure database `marine_data` exists
+- Verify `DATABASE_URL` is set in backend `.env`
+- Confirm Neon connection string includes `sslmode=require`
+- Test with: `psql "$DATABASE_URL" -c "SELECT 1;"`
 
 ### Port Already in Use
 - Backend: Change `PORT` in `.env`
@@ -294,6 +287,20 @@ uvicorn main:app --host 0.0.0.0 --port 8000
 npm install
 
 # ML Service
+pip install -r requirements.txt
+```
+
+### ML install fails on Python 3.13 (`Cannot import 'setuptools.build_meta'`)
+- This ML stack is pinned for Python 3.10.x.
+- Recreate the virtual environment with Python 3.10 and reinstall:
+
+```bash
+cd ml-service
+deactivate 2>/dev/null || true
+rm -rf venv
+python3.10 -m venv venv
+source venv/bin/activate
+python -m pip install --upgrade pip setuptools wheel
 pip install -r requirements.txt
 ```
 

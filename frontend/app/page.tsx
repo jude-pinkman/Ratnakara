@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Waves, Fish, Dna, TreeDeciduous, BarChart3, Bot, Activity, Database, ArrowRight, ChevronRight, Sparkles } from 'lucide-react';
+import { Waves, Fish, Dna, TreeDeciduous, BarChart3, Bot, Activity, Database, ArrowRight, ChevronRight, Sparkles, TrendingUp } from 'lucide-react';
 
 export default function HomePage() {
   return (
@@ -181,7 +181,64 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Features Section */}
+      {/* Analytics Section */}
+      <section className="w-full py-24 bg-gray-50">
+        <div className="container mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-navy-900 mb-4">Analytics & Tools</h2>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              Advanced analytics tools for deeper insights and predictive capabilities.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <Link href="/forecast" className="group">
+              <div className="card h-full border-2 border-transparent hover:border-purple-500 transition-all duration-300">
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                  <TrendingUp className="w-7 h-7 text-white" />
+                </div>
+                <h3 className="text-xl font-bold text-navy-900 mb-3">Forecasts</h3>
+                <p className="text-gray-600 mb-4">
+                  LSTM-powered predictions with confidence intervals and trend analysis
+                </p>
+                <span className="inline-flex items-center text-purple-600 font-medium group-hover:gap-2 transition-all">
+                  Predict <ChevronRight className="w-4 h-4" />
+                </span>
+              </div>
+            </Link>
+
+            <Link href="/correlations" className="group">
+              <div className="card h-full border-2 border-transparent hover:border-indigo-500 transition-all duration-300">
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                  <BarChart3 className="w-7 h-7 text-white" />
+                </div>
+                <h3 className="text-xl font-bold text-navy-900 mb-3">Correlations</h3>
+                <p className="text-gray-600 mb-4">
+                  Environmental factors vs abundance with heatmap and strength analysis
+                </p>
+                <span className="inline-flex items-center text-indigo-600 font-medium group-hover:gap-2 transition-all">
+                  Analyze <ChevronRight className="w-4 h-4" />
+                </span>
+              </div>
+            </Link>
+
+            <Link href="/upload" className="group">
+              <div className="card h-full border-2 border-transparent hover:border-blue-500 transition-all duration-300">
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                  <Database className="w-7 h-7 text-white" />
+                </div>
+                <h3 className="text-xl font-bold text-navy-900 mb-3">Data Upload</h3>
+                <p className="text-gray-600 mb-4">
+                  Import CSV/Excel datasets with automatic data type detection and analysis
+                </p>
+                <span className="inline-flex items-center text-blue-600 font-medium group-hover:gap-2 transition-all">
+                  Import <ChevronRight className="w-4 h-4" />
+                </span>
+              </div>
+            </Link>
+          </div>
+        </div>
+      </section>
       <section className="w-full py-24 bg-gradient-to-br from-navy-900 to-marine-900">
         <div className="container mx-auto px-6">
           <div className="text-center mb-16">

@@ -1,41 +1,16 @@
 version: '3.8'
 
 services:
-  postgres:
-    image: postgres:14-alpine
-    container_name: marine-postgres
-    environment:
-      POSTGRES_DB: marine_data
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./backend/src/db/schema.sql:/docker-entrypoint-initdb.d/schema.sql
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: marine-backend
     environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_NAME: marine_data
-      DB_USER: postgres
-      DB_PASSWORD: postgres
+      DATABASE_URL: ${DATABASE_URL}
       PORT: 3001
     ports:
       - "3001:3001"
-    depends_on:
-      postgres:
-        condition: service_healthy
     volumes:
       - ./backend:/app
       - /app/node_modules
@@ -67,6 +42,3 @@ services:
       - ./frontend:/app
       - /app/node_modules
       - /app/.next
-
-volumes:
-  postgres_data:

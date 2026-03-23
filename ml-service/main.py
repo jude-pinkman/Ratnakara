@@ -1,16 +1,22 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 import numpy as np
 import json
+import os
+import pickle
 from datetime import datetime, timedelta
 
 from models.lstm_model import LSTMPredictor
 from models.random_forest import RandomForestPredictor
 from models.regression import RegressionPredictor
 
-app = FastAPI(title="Marine Data ML Service")
+app = FastAPI(
+    title="Ratnakara Marine Data ML Service",
+    description="AI-powered predictions for marine biodiversity and fisheries",
+    version="2.0.0"
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -20,10 +26,44 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize models
+# Model directory
+MODEL_DIR = os.path.join(os.path.dirname(__file__), 'models', 'saved')
+
+# Initialize predictors
 lstm_predictor = LSTMPredictor()
 rf_predictor = RandomForestPredictor()
 regression_predictor = RegressionPredictor()
+
+# Load trained models if available
+def load_trained_models():
+    """Load pre-trained models from disk"""
+    global rf_predictor, regression_predictor
+
+    # Load Random Forest
+    rf_path = os.path.join(MODEL_DIR, 'random_forest.pkl')
+    if os.path.exists(rf_path):
+        try:
+            with open(rf_path, 'rb') as f:
+                data = pickle.load(f)
+                rf_predictor.model = data['model']
+                print(f"Loaded Random Forest model from {rf_path}")
+        except Exception as e:
+            print(f"Failed to load Random Forest: {e}")
+
+    # Load Linear Regression
+    lr_path = os.path.join(MODEL_DIR, 'linear_regression.pkl')
+    if os.path.exists(lr_path):
+        try:
+            with open(lr_path, 'rb') as f:
+                data = pickle.load(f)
+                regression_predictor.model = data['model']
+                regression_predictor.scaler = data.get('scaler')
+                print(f"Loaded Linear Regression model from {lr_path}")
+        except Exception as e:
+            print(f"Failed to load Linear Regression: {e}")
+
+# Load models on startup
+load_trained_models()
 
 # Chatbot knowledge base
 CHATBOT_KB = {

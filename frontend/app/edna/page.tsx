@@ -423,7 +423,7 @@ export default function EdnaPage() {
                     legend: { display: false },
                     tooltip: {
                       callbacks: {
-                        label: (context) => `${context.parsed.y.toFixed(2)} ng/L`,
+                        label: (context) => context.parsed.y ? `${context.parsed.y.toFixed(2)} ng/L` : '',
                       },
                     },
                   },

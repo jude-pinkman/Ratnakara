@@ -1,3 +1,4 @@
+# Requires Python 3.10.x (TensorFlow 2.15 and pinned NumPy compatibility)
 fastapi==0.109.0
 uvicorn==0.27.0
 numpy==1.24.3

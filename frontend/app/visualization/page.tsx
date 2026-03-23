@@ -184,6 +184,7 @@ export default function VisualizationPage() {
 
   // Scatter: Correlation data
   const scatterData: ChartData = {
+    labels: [],
     datasets: [
       {
         label: 'Temperature vs Abundance',

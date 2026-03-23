@@ -17,17 +17,22 @@ import {
   X,
   ChevronRight,
   Compass,
+  Map,
+  TrendingUp,
+  Upload,
+  Brain,
 } from 'lucide-react';
 
 const navItems = [
   { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+  { name: 'Explorer', path: '/explorer', icon: Map },
   { name: 'Ocean Data', path: '/ocean', icon: Waves },
   { name: 'Fisheries', path: '/fisheries', icon: Fish },
   { name: 'eDNA Analysis', path: '/edna', icon: Dna },
-  { name: 'Taxonomy', path: '/taxonomy', icon: TreeDeciduous },
-  { name: 'Visualization', path: '/visualization', icon: BarChart3 },
+  { name: 'Biodiversity', path: '/biodiversity', icon: TreeDeciduous },
+  { name: 'Forecast', path: '/forecast', icon: TrendingUp },
   { name: 'Correlations', path: '/correlations', icon: GitBranch },
-  { name: 'Terminology', path: '/terminology', icon: BookOpen },
+  { name: 'Upload', path: '/upload', icon: Upload },
   { name: 'API Docs', path: '/api-docs', icon: FileCode2 },
 ];
 

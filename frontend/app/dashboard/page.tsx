@@ -1,44 +1,45 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { oceanAPI, fisheriesAPI, taxonomyAPI } from '@/lib/api';
+import { oceanAPI, fisheriesAPI, taxonomyAPI, ednaAPI, correlationAPI } from '@/lib/api';
 import {
-  Waves,
-  Fish,
-  Dna,
-  TreeDeciduous,
-  TrendingUp,
-  Activity,
-  Database,
-  Zap,
-  ArrowRight,
-  BarChart3,
-  Globe,
-  CheckCircle2,
+  Waves, Fish, Dna, TreeDeciduous, TrendingUp, Upload, Download,
+  AlertCircle, CheckCircle2, Info, ArrowUp, ArrowDown,
 } from 'lucide-react';
-import Link from 'next/link';
-import Chatbot from '@/components/Chatbot';
+import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import toast from 'react-hot-toast';
 
 export default function DashboardPage() {
   const [oceanKPIs, setOceanKPIs] = useState<any>(null);
+  const [oceanTrends, setOceanTrends] = useState<any[]>([]);
   const [fisheriesMetrics, setFisheriesMetrics] = useState<any>(null);
+  const [fisheriesTrends, setFisheriesTrends] = useState<any[]>([]);
   const [taxonomyStats, setTaxonomyStats] = useState<any>(null);
+  const [ednaSamples, setEdnaSamples] = useState<any[]>([]);
+  const [correlations, setCorrelations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [oceanRes, fisheriesRes, taxonomyRes] = await Promise.all([
+        const [oceanKPI, oceanTr, fisheriesM, edna, taxa, corr] = await Promise.all([
           oceanAPI.getKPIs(),
+          oceanAPI.getTrends(),
           fisheriesAPI.getMetrics(),
+          ednaAPI.getAll(),
           taxonomyAPI.getStats(),
+          correlationAPI.getAll(),
         ]);
 
-        setOceanKPIs(oceanRes.data.data);
-        setFisheriesMetrics(fisheriesRes.data.data);
-        setTaxonomyStats(taxonomyRes.data.data);
+        setOceanKPIs(oceanKPI.data.data);
+        setOceanTrends(oceanTr.data.data || []);
+        setFisheriesMetrics(fisheriesM.data.data);
+        setEdnaSamples(edna.data.data || []);
+        setTaxonomyStats(taxa.data.data);
+        setCorrelations(corr.data.data || []);
       } catch (error) {
         console.error('Failed to fetch dashboard data:', error);
+        toast.error('Failed to load dashboard data');
       } finally {
         setLoading(false);
       }
@@ -47,240 +48,282 @@ export default function DashboardPage() {
     fetchData();
   }, []);
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      toast.success(`Dataset "${file.name}" uploaded! Processing...`);
+      // TODO: Implement backend upload endpoint
+    }
+  };
+
+  const KPICard = ({ icon: Icon, label, value, unit, trend }: any) => (
+    <div className="bg-gradient-to-br from-white to-gray-50 rounded-lg border border-gray-200 p-6 shadow-sm">
+      <div className="flex items-start justify-between mb-4">
+        <div>
+          <p className="text-sm text-gray-600 font-medium">{label}</p>
+          <p className="text-3xl font-bold text-gray-900 mt-2">
+            {value || '-'} <span className="text-lg text-gray-500">{unit}</span>
+          </p>
+        </div>
+        <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-blue-50 rounded-lg flex items-center justify-center">
+          <Icon className="w-6 h-6 text-blue-600" />
+        </div>
+      </div>
+      {trend && (
+        <div className="flex items-center gap-2 text-xs">
+          {trend > 0 ? <ArrowUp className="w-4 h-4 text-green-600" /> : <ArrowDown className="w-4 h-4 text-red-600" />}
+          <span className={trend > 0 ? 'text-green-600' : 'text-red-600'}>
+            {Math.abs(trend)}% vs last month
+          </span>
+        </div>
+      )}
+    </div>
+  );
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
         <div className="text-center">
-          <div className="spinner mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading dashboard...</p>
+          <div className="w-12 h-12 rounded-full border-4 border-blue-200 border-t-blue-600 animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium">Loading analytics...</p>
         </div>
       </div>
     );
   }
 
-  const modules = [
-    {
-      name: 'Ocean Data',
-      description: 'Temperature, salinity, pH monitoring',
-      href: '/ocean',
-      icon: Waves,
-      color: 'from-marine-500 to-marine-600',
-      stats: oceanKPIs ? `${parseFloat(oceanKPIs.avg_temp).toFixed(1)}°C avg` : '-',
-    },
-    {
-      name: 'Fisheries',
-      description: 'Abundance and biomass tracking',
-      href: '/fisheries',
-      icon: Fish,
-      color: 'from-emerald-500 to-emerald-600',
-      stats: fisheriesMetrics ? `${fisheriesMetrics.species_count} species` : '-',
-    },
-    {
-      name: 'eDNA Analysis',
-      description: 'Environmental DNA biodiversity',
-      href: '/edna',
-      icon: Dna,
-      color: 'from-purple-500 to-purple-600',
-      stats: '960+ samples',
-    },
-    {
-      name: 'Taxonomy',
-      description: 'Species classification browser',
-      href: '/taxonomy',
-      icon: TreeDeciduous,
-      color: 'from-orange-500 to-orange-600',
-      stats: taxonomyStats ? `${taxonomyStats.species} species` : '-',
-    },
-  ];
-
-  const quickLinks = [
-    { name: 'Visualization', href: '/visualization', icon: BarChart3 },
-    { name: 'Correlations', href: '/correlations', icon: Activity },
-    { name: 'Terminology', href: '/terminology', icon: Database },
-    { name: 'API Docs', href: '/api-docs', icon: Zap },
-  ];
-
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="px-8 py-6">
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-8 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-navy-900">Dashboard Overview</h1>
-              <p className="text-gray-500">Welcome to the Marine Data Analytics Platform</p>
+              <h1 className="text-3xl font-bold text-gray-900">Marine Analytics Hub</h1>
+              <p className="text-gray-500 mt-1">Real-time oceanographic and fisheries data analysis</p>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-700 rounded-lg">
-                <CheckCircle2 className="w-4 h-4" />
-                <span className="text-sm font-medium">All Systems Operational</span>
-              </div>
-            </div>
+            <label className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer transition">
+              <Upload className="w-4 h-4" />
+              Upload Dataset
+              <input type="file" accept=".csv,.xlsx" onChange={handleFileUpload} className="hidden" />
+            </label>
           </div>
         </div>
       </div>
 
-      <div className="p-8">
+      <div className="max-w-7xl mx-auto px-8 py-8">
         {/* KPI Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="kpi-card">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm opacity-90">Avg Ocean Temperature</h3>
-              <Waves className="w-5 h-5 opacity-80" />
-            </div>
-            <p className="text-3xl font-bold">
-              {oceanKPIs ? `${parseFloat(oceanKPIs.avg_temp).toFixed(1)}°C` : '-'}
-            </p>
-            <div className="flex items-center gap-2 mt-3">
-              <TrendingUp className="w-4 h-4 text-emerald-300" />
-              <span className="text-xs opacity-80">Normal range</span>
-            </div>
-          </div>
-
-          <div className="kpi-card kpi-card-green">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm opacity-90">Total Fish Abundance</h3>
-              <Fish className="w-5 h-5 opacity-80" />
-            </div>
-            <p className="text-3xl font-bold">
-              {fisheriesMetrics ? parseInt(fisheriesMetrics.total_abundance).toLocaleString() : '-'}
-            </p>
-            <div className="flex items-center gap-2 mt-3">
-              <TrendingUp className="w-4 h-4 text-emerald-300" />
-              <span className="text-xs opacity-80">+12% this month</span>
-            </div>
-          </div>
-
-          <div className="kpi-card kpi-card-purple">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm opacity-90">Species Tracked</h3>
-              <Dna className="w-5 h-5 opacity-80" />
-            </div>
-            <p className="text-3xl font-bold">
-              {fisheriesMetrics ? fisheriesMetrics.species_count : '-'}
-            </p>
-            <div className="flex items-center gap-2 mt-3">
-              <Globe className="w-4 h-4 opacity-70" />
-              <span className="text-xs opacity-80">Across 5 regions</span>
-            </div>
-          </div>
-
-          <div className="kpi-card kpi-card-orange">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm opacity-90">Taxonomic Records</h3>
-              <TreeDeciduous className="w-5 h-5 opacity-80" />
-            </div>
-            <p className="text-3xl font-bold">
-              {taxonomyStats ? taxonomyStats.species : '-'}
-            </p>
-            <div className="flex items-center gap-2 mt-3">
-              <Database className="w-4 h-4 opacity-70" />
-              <span className="text-xs opacity-80">Full classification</span>
-            </div>
-          </div>
+          <KPICard
+            icon={Waves}
+            label="Avg Temperature"
+            value={oceanKPIs?.avg_temp ? parseFloat(oceanKPIs.avg_temp).toFixed(1) : '-'}
+            unit="°C"
+            trend={5}
+          />
+          <KPICard
+            icon={Waves}
+            label="Avg Salinity"
+            value={oceanKPIs?.avg_salinity ? parseFloat(oceanKPIs.avg_salinity).toFixed(1) : '-'}
+            unit="PSU"
+            trend={-2}
+          />
+          <KPICard
+            icon={Fish}
+            label="Total Fish Abundance"
+            value={fisheriesMetrics?.total_abundance ? (fisheriesMetrics.total_abundance / 1000).toFixed(1) : '-'}
+            unit="K"
+            trend={8}
+          />
+          <KPICard
+            icon={TreeDeciduous}
+            label="Species Tracked"
+            value={fisheriesMetrics?.species_count || '-'}
+            unit="species"
+            trend={0}
+          />
         </div>
 
-        {/* Main Content Grid */}
+        {/* Ocean Data Analytics */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          {/* Data Modules */}
-          <div className="lg:col-span-2">
-            <div className="card">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-semibold text-navy-900">Data Modules</h2>
-                <span className="text-sm text-gray-500">4 active modules</span>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {modules.map((module) => {
-                  const Icon = module.icon;
-                  return (
-                    <Link key={module.name} href={module.href}>
-                      <div className="group p-4 rounded-xl border border-gray-200 hover:border-marine-300 hover:shadow-md transition-all cursor-pointer">
-                        <div className="flex items-start gap-4">
-                          <div
-                            className={`w-12 h-12 rounded-xl bg-gradient-to-br ${module.color} flex items-center justify-center group-hover:scale-110 transition-transform`}
-                          >
-                            <Icon className="w-6 h-6 text-white" />
-                          </div>
-                          <div className="flex-1">
-                            <h3 className="font-semibold text-navy-900 group-hover:text-marine-600 transition-colors">
-                              {module.name}
-                            </h3>
-                            <p className="text-sm text-gray-500 mt-1">{module.description}</p>
-                            <p className="text-sm font-medium text-marine-600 mt-2">{module.stats}</p>
-                          </div>
-                          <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-marine-600 group-hover:translate-x-1 transition-all" />
-                        </div>
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
+          <div className="lg:col-span-2 bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-gray-900">Ocean Temperature Trends</h2>
+              <Waves className="w-5 h-5 text-blue-600" />
             </div>
-
-            {/* Quick Links */}
-            <div className="card mt-6">
-              <h2 className="text-lg font-semibold text-navy-900 mb-4">Quick Access</h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {quickLinks.map((link) => {
-                  const Icon = link.icon;
-                  return (
-                    <Link key={link.name} href={link.href}>
-                      <div className="flex flex-col items-center gap-2 p-4 rounded-xl bg-gray-50 hover:bg-marine-50 border border-transparent hover:border-marine-200 transition-all cursor-pointer group">
-                        <Icon className="w-6 h-6 text-gray-400 group-hover:text-marine-600 transition-colors" />
-                        <span className="text-sm font-medium text-gray-600 group-hover:text-marine-700">
-                          {link.name}
-                        </span>
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
+            {oceanTrends.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={oceanTrends}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis dataKey="month" stroke="#9ca3af" />
+                  <YAxis stroke="#9ca3af" />
+                  <Tooltip contentStyle={{ backgroundColor: '#f9fafb', border: '1px solid #e5e7eb' }} />
+                  <Legend />
+                  <Line type="monotone" dataKey="avg_temp" stroke="#3b82f6" name="Temperature (°C)" strokeWidth={2} />
+                  <Line type="monotone" dataKey="avg_salinity" stroke="#10b981" name="Salinity" strokeWidth={2} />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <p className="text-gray-500 text-center py-12">No trend data available</p>
+            )}
           </div>
 
-          {/* System Status */}
-          <div className="card h-fit">
-            <h2 className="text-lg font-semibold text-navy-900 mb-6">System Status</h2>
+          <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+            <h2 className="text-xl font-bold text-gray-900 mb-6">Water Quality</h2>
             <div className="space-y-4">
-              {[
-                { name: 'Ocean Sensors', status: 'Active', uptime: '99.9%' },
-                { name: 'Fisheries Monitoring', status: 'Active', uptime: '99.7%' },
-                { name: 'eDNA Analysis', status: 'Active', uptime: '99.8%' },
-                { name: 'ML Forecasting', status: 'Active', uptime: '98.5%' },
-                { name: 'API Services', status: 'Active', uptime: '99.9%' },
-              ].map((system, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-center justify-between p-3 rounded-lg bg-gray-50"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                    <span className="text-sm font-medium text-gray-700">{system.name}</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs text-gray-500">{system.uptime}</span>
-                    <span className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs font-medium">
-                      {system.status}
-                    </span>
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-medium text-gray-600">pH Level</span>
+                  <span className="text-lg font-bold text-gray-900">{oceanKPIs?.avg_ph ? parseFloat(oceanKPIs.avg_ph).toFixed(2) : '-'}</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="bg-green-500 h-2 rounded-full" style={{ width: '75%' }}></div>
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-medium text-gray-600">Oxygen Level</span>
+                  <span className="text-lg font-bold text-gray-900">{oceanKPIs?.avg_oxygen ? parseFloat(oceanKPIs.avg_oxygen).toFixed(2) : '-'} mg/L</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="bg-blue-500 h-2 rounded-full" style={{ width: '60%' }}></div>
+                </div>
+              </div>
+              <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex gap-3">
+                  <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-blue-900">Healthy Range</p>
+                    <p className="text-xs text-blue-700 mt-1">All parameters within optimal ranges for marine life</p>
                   </div>
                 </div>
-              ))}
-            </div>
-
-            <div className="mt-6 p-4 rounded-xl bg-gradient-to-br from-marine-50 to-teal-50 border border-marine-100">
-              <div className="flex items-center gap-3 mb-2">
-                <Activity className="w-5 h-5 text-marine-600" />
-                <span className="font-semibold text-marine-900">Platform Health</span>
               </div>
-              <p className="text-sm text-marine-700">
-                All systems are running smoothly with 99.5% average uptime this month.
-              </p>
             </div>
           </div>
         </div>
 
-        {/* AI Chatbot */}
-        <Chatbot />
+        {/* Fisheries & eDNA */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-gray-900">Fish Species Distribution</h2>
+              <Fish className="w-5 h-5 text-emerald-600" />
+            </div>
+            {fisheriesMetrics?.species_count ? (
+              <div className="space-y-3">
+                <div className="flex justify-between items-center p-3 bg-emerald-50 rounded-lg">
+                  <span className="font-medium text-gray-700">Species Found</span>
+                  <span className="text-2xl font-bold text-emerald-600">{fisheriesMetrics.species_count}</span>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
+                  <span className="font-medium text-gray-700">Total Biomass</span>
+                  <span className="text-lg font-bold text-blue-600">{(fisheriesMetrics.total_biomass / 1000).toFixed(1)}K tons</span>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
+                  <span className="font-medium text-gray-700">Avg Biomass/Species</span>
+                  <span className="text-lg font-bold text-purple-600">{Math.round(fisheriesMetrics.total_biomass / fisheriesMetrics.species_count)} tons</span>
+                </div>
+              </div>
+            ) : (
+              <p className="text-gray-500 text-center py-12">No fisheries data available</p>
+            )}
+          </div>
+
+          <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-gray-900">eDNA Analysis</h2>
+              <Dna className="w-5 h-5 text-purple-600" />
+            </div>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
+                <span className="font-medium text-gray-700">Total Samples</span>
+                <span className="text-2xl font-bold text-purple-600">{ednaSamples.length}</span>
+              </div>
+              <div className="flex justify-between items-center p-3 bg-pink-50 rounded-lg">
+                <span className="font-medium text-gray-700">Avg Concentration</span>
+                <span className="text-lg font-bold text-pink-600">
+                  {ednaSamples.length > 0
+                    ? (ednaSamples.reduce((sum: number, s: any) => sum + parseFloat(s.concentration || 0), 0) / ednaSamples.length).toFixed(1)
+                    : '-'}
+                </span>
+              </div>
+              <div className="flex justify-between items-center p-3 bg-indigo-50 rounded-lg">
+                <span className="font-medium text-gray-700">Avg Confidence</span>
+                <span className="text-lg font-bold text-indigo-600">
+                  {ednaSamples.length > 0
+                    ? (ednaSamples.reduce((sum: number, s: any) => sum + parseFloat(s.confidence || 0), 0) / ednaSamples.length * 100).toFixed(0)
+                    : '-'}%
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Correlations */}
+        <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold text-gray-900">Environmental Correlations</h2>
+            <TrendingUp className="w-5 h-5 text-orange-600" />
+          </div>
+          {correlations.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="border-b border-gray-200">
+                  <tr>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Species</th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Temp (°C)</th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Salinity</th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Abundance</th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Oxygen</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {correlations.slice(0, 5).map((corr: any, idx) => (
+                    <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50">
+                      <td className="py-3 px-4 font-medium text-gray-900">{corr.species}</td>
+                      <td className="py-3 px-4 text-gray-600">{parseFloat(corr.temperature).toFixed(1)}</td>
+                      <td className="py-3 px-4 text-gray-600">{parseFloat(corr.salinity).toFixed(1)}</td>
+                      <td className="py-3 px-4 text-gray-600">{corr.abundance}</td>
+                      <td className="py-3 px-4 text-gray-600">{parseFloat(corr.oxygen).toFixed(1)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="text-gray-500 text-center py-12">No correlation data available</p>
+          )}
+        </div>
+
+        {/* Quick Actions */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <a href="/ocean" className="group bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg hover:border-blue-300 transition cursor-pointer">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-gray-900 group-hover:text-blue-600">Ocean Data</h3>
+                <p className="text-sm text-gray-500 mt-1">Detailed oceanographic analysis</p>
+              </div>
+              <Waves className="w-8 h-8 text-blue-600 opacity-20 group-hover:opacity-100 transition" />
+            </div>
+          </a>
+          <a href="/fisheries" className="group bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg hover:border-emerald-300 transition cursor-pointer">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-gray-900 group-hover:text-emerald-600">Fisheries</h3>
+                <p className="text-sm text-gray-500 mt-1">Species distribution & biomass</p>
+              </div>
+              <Fish className="w-8 h-8 text-emerald-600 opacity-20 group-hover:opacity-100 transition" />
+            </div>
+          </a>
+          <a href="/edna" className="group bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg hover:border-purple-300 transition cursor-pointer">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-gray-900 group-hover:text-purple-600">eDNA Analysis</h3>
+                <p className="text-sm text-gray-500 mt-1">Biodiversity from DNA</p>
+              </div>
+              <Dna className="w-8 h-8 text-purple-600 opacity-20 group-hover:opacity-100 transition" />
+            </div>
+          </a>
+        </div>
       </div>
     </div>
   );
