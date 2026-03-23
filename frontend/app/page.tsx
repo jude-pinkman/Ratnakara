@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Waves, Fish, Dna, TreeDeciduous, BarChart3, Bot, Activity, Database, ArrowRight, ChevronRight, Sparkles, TrendingUp } from 'lucide-react';
+import { Waves, Fish, Dna, TreeDeciduous, BarChart3, Bot, Activity, ArrowRight, ChevronRight, Sparkles, TrendingUp } from 'lucide-react';
 
 export default function HomePage() {
   return (
@@ -222,17 +222,17 @@ export default function HomePage() {
               </div>
             </Link>
 
-            <Link href="/upload" className="group">
+            <Link href="/api-docs" className="group">
               <div className="card h-full border-2 border-transparent hover:border-blue-500 transition-all duration-300">
                 <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                  <Database className="w-7 h-7 text-white" />
+                  <BarChart3 className="w-7 h-7 text-white" />
                 </div>
-                <h3 className="text-xl font-bold text-navy-900 mb-3">Data Upload</h3>
+                <h3 className="text-xl font-bold text-navy-900 mb-3">API Reference</h3>
                 <p className="text-gray-600 mb-4">
-                  Import CSV/Excel datasets with automatic data type detection and analysis
+                  Explore live ingestion and analytics endpoints for realtime integrations
                 </p>
                 <span className="inline-flex items-center text-blue-600 font-medium group-hover:gap-2 transition-all">
-                  Import <ChevronRight className="w-4 h-4" />
+                  Explore <ChevronRight className="w-4 h-4" />
                 </span>
               </div>
             </Link>
@@ -284,7 +284,7 @@ export default function HomePage() {
           <div className="mt-16 grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             <div className="flex items-start gap-4 p-6 rounded-xl bg-white/5 border border-white/10">
               <div className="w-12 h-12 rounded-lg bg-marine-500/20 flex items-center justify-center flex-shrink-0">
-                <Database className="w-6 h-6 text-marine-400" />
+                <BarChart3 className="w-6 h-6 text-marine-400" />
               </div>
               <div>
                 <h4 className="text-lg font-semibold text-white mb-2">Correlation Analysis</h4>

@@ -5,21 +5,7 @@
   "scripts": {
     "dev": "tsx watch src/app.ts",
     "build": "tsc",
-    "start": "node dist/app.js",
-    "db:init": "tsx src/data/initDatabase.ts",
-    "seed": "tsx src/data/seed.ts",
-    "seed:real": "tsx src/data/seedRealData.ts",
-    "import:all": "tsx src/data/importers/index.ts",
-    "import:full": "tsx src/data/importers/index.ts --importers worms,fao,noaa,json,dna,otolith",
-    "import:worms": "tsx src/data/importers/index.ts --importers worms",
-    "import:fao": "tsx src/data/importers/index.ts --importers fao",
-    "import:noaa": "tsx src/data/importers/index.ts --importers noaa",
-    "import:json": "tsx src/data/importers/index.ts --importers json",
-    "import:dna": "tsx src/data/importers/index.ts --importers dna",
-    "import:otolith": "tsx src/data/importers/index.ts --importers otolith",
-    "import:reset": "tsx src/data/importers/index.ts --reset",
-    "import:validate": "tsx src/data/importers/index.ts --dry-run",
-    "import:help": "tsx src/data/importers/index.ts --help"
+    "start": "node dist/app.js"
   },
   "dependencies": {
     "cors": "^2.8.5",

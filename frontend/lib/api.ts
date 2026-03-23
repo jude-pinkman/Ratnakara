@@ -19,19 +19,20 @@ export const oceanAPI = {
 
 export const fisheriesAPI = {
   getAll: (params?: any) => api.get('/api/fisheries', { params }),
-  getMetrics: () => api.get('/api/fisheries/metrics'),
-  getSpeciesDistribution: () => api.get('/api/fisheries/species-distribution'),
-  getTemporal: () => api.get('/api/fisheries/temporal'),
-  getGeospatial: () => api.get('/api/fisheries/geospatial'),
+  getMetrics: (params?: any) => api.get('/api/fisheries/metrics', { params }),
+  getSpeciesDistribution: (params?: any) => api.get('/api/fisheries/species-distribution', { params }),
+  getTemporal: (params?: any) => api.get('/api/fisheries/temporal', { params }),
+  getGeospatial: (params?: any) => api.get('/api/fisheries/geospatial', { params }),
 };
 
 export const ednaAPI = {
   getAll: (params?: any) => api.get('/api/edna', { params }),
-  getConcentrationTrends: () => api.get('/api/edna/concentration-trends'),
-  getDepthAnalysis: () => api.get('/api/edna/depth-analysis'),
-  getSeasonal: () => api.get('/api/edna/seasonal'),
-  getConfidenceDistribution: () => api.get('/api/edna/confidence-distribution'),
-  getSpeciesList: () => api.get('/api/edna/species-list'),
+  getConcentrationTrends: (params?: any) => api.get('/api/edna/concentration-trends', { params }),
+  getDepthAnalysis: (params?: any) => api.get('/api/edna/depth-analysis', { params }),
+  getSeasonal: (params?: any) => api.get('/api/edna/seasonal', { params }),
+  getConfidenceDistribution: (params?: any) => api.get('/api/edna/confidence-distribution', { params }),
+  getSpeciesList: (params?: any) => api.get('/api/edna/species-list', { params }),
+  getStats: () => api.get('/api/edna/stats'),
 };
 
 export const taxonomyAPI = {

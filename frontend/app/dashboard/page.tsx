@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { oceanAPI, fisheriesAPI, taxonomyAPI, ednaAPI, correlationAPI } from '@/lib/api';
 import {
-  Waves, Fish, Dna, TreeDeciduous, TrendingUp, Upload, Download,
+  Waves, Fish, Dna, TreeDeciduous, TrendingUp, Download,
   AlertCircle, CheckCircle2, Info, ArrowUp, ArrowDown,
 } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -47,14 +47,6 @@ export default function DashboardPage() {
 
     fetchData();
   }, []);
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      toast.success(`Dataset "${file.name}" uploaded! Processing...`);
-      // TODO: Implement backend upload endpoint
-    }
-  };
 
   const KPICard = ({ icon: Icon, label, value, unit, trend }: any) => (
     <div className="bg-gradient-to-br from-white to-gray-50 rounded-lg border border-gray-200 p-6 shadow-sm">
@@ -101,11 +93,6 @@ export default function DashboardPage() {
               <h1 className="text-3xl font-bold text-gray-900">Marine Analytics Hub</h1>
               <p className="text-gray-500 mt-1">Real-time oceanographic and fisheries data analysis</p>
             </div>
-            <label className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer transition">
-              <Upload className="w-4 h-4" />
-              Upload Dataset
-              <input type="file" accept=".csv,.xlsx" onChange={handleFileUpload} className="hidden" />
-            </label>
           </div>
         </div>
       </div>
@@ -116,30 +103,26 @@ export default function DashboardPage() {
           <KPICard
             icon={Waves}
             label="Avg Temperature"
-            value={oceanKPIs?.avg_temp ? parseFloat(oceanKPIs.avg_temp).toFixed(1) : '-'}
+            value={oceanKPIs?.avg_temperature ? parseFloat(oceanKPIs.avg_temperature).toFixed(1) : '-'}
             unit="°C"
-            trend={5}
           />
           <KPICard
             icon={Waves}
-            label="Avg Salinity"
-            value={oceanKPIs?.avg_salinity ? parseFloat(oceanKPIs.avg_salinity).toFixed(1) : '-'}
-            unit="PSU"
-            trend={-2}
+            label="Avg Wave Height"
+            value={oceanKPIs?.avg_wave_height ? parseFloat(oceanKPIs.avg_wave_height).toFixed(1) : '-'}
+            unit="m"
+          />
+          <KPICard
+            icon={Waves}
+            label="Avg Wind Speed"
+            value={oceanKPIs?.avg_wind_speed ? parseFloat(oceanKPIs.avg_wind_speed).toFixed(1) : '-'}
+            unit="m/s"
           />
           <KPICard
             icon={Fish}
-            label="Total Fish Abundance"
-            value={fisheriesMetrics?.total_abundance ? (fisheriesMetrics.total_abundance / 1000).toFixed(1) : '-'}
-            unit="K"
-            trend={8}
-          />
-          <KPICard
-            icon={TreeDeciduous}
             label="Species Tracked"
             value={fisheriesMetrics?.species_count || '-'}
             unit="species"
-            trend={0}
           />
         </div>
 
@@ -147,19 +130,20 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           <div className="lg:col-span-2 bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-900">Ocean Temperature Trends</h2>
+              <h2 className="text-xl font-bold text-gray-900">Ocean Conditions Trends</h2>
               <Waves className="w-5 h-5 text-blue-600" />
             </div>
             {oceanTrends.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={oceanTrends}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis dataKey="month" stroke="#9ca3af" />
+                  <XAxis dataKey="day" stroke="#9ca3af" />
                   <YAxis stroke="#9ca3af" />
                   <Tooltip contentStyle={{ backgroundColor: '#f9fafb', border: '1px solid #e5e7eb' }} />
                   <Legend />
-                  <Line type="monotone" dataKey="avg_temp" stroke="#3b82f6" name="Temperature (°C)" strokeWidth={2} />
-                  <Line type="monotone" dataKey="avg_salinity" stroke="#10b981" name="Salinity" strokeWidth={2} />
+                  <Line type="monotone" dataKey="avg_temperature" stroke="#3b82f6" name="Temperature (°C)" strokeWidth={2} />
+                  <Line type="monotone" dataKey="avg_wave_height" stroke="#06b6d4" name="Wave Height (m)" strokeWidth={2} />
+                  <Line type="monotone" dataKey="avg_wind_speed" stroke="#f59e0b" name="Wind Speed (m/s)" strokeWidth={2} />
                 </LineChart>
               </ResponsiveContainer>
             ) : (
@@ -168,32 +152,41 @@ export default function DashboardPage() {
           </div>
 
           <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-            <h2 className="text-xl font-bold text-gray-900 mb-6">Water Quality</h2>
+            <h2 className="text-xl font-bold text-gray-900 mb-6">Data Availability</h2>
             <div className="space-y-4">
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-medium text-gray-600">pH Level</span>
-                  <span className="text-lg font-bold text-gray-900">{oceanKPIs?.avg_ph ? parseFloat(oceanKPIs.avg_ph).toFixed(2) : '-'}</span>
+                  <span className="text-sm font-medium text-gray-600">Temperature Records</span>
+                  <span className="text-lg font-bold text-gray-900">{oceanKPIs?.data_coverage?.temperature_records || 0}</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div className="bg-green-500 h-2 rounded-full" style={{ width: '75%' }}></div>
+                  <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${((oceanKPIs?.data_coverage?.temperature_records || 0) / (oceanKPIs?.total_records || 1) * 100).toFixed(0)}%` }}></div>
                 </div>
               </div>
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-medium text-gray-600">Oxygen Level</span>
-                  <span className="text-lg font-bold text-gray-900">{oceanKPIs?.avg_oxygen ? parseFloat(oceanKPIs.avg_oxygen).toFixed(2) : '-'} mg/L</span>
+                  <span className="text-sm font-medium text-gray-600">Wave Height Records</span>
+                  <span className="text-lg font-bold text-gray-900">{oceanKPIs?.data_coverage?.wave_height_records || 0}</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div className="bg-blue-500 h-2 rounded-full" style={{ width: '60%' }}></div>
+                  <div className="bg-cyan-500 h-2 rounded-full" style={{ width: `${((oceanKPIs?.data_coverage?.wave_height_records || 0) / (oceanKPIs?.total_records || 1) * 100).toFixed(0)}%` }}></div>
                 </div>
               </div>
-              <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-medium text-gray-600">Wind Speed Records</span>
+                  <span className="text-lg font-bold text-gray-900">{oceanKPIs?.data_coverage?.wind_speed_records || 0}</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="bg-amber-500 h-2 rounded-full" style={{ width: `${((oceanKPIs?.data_coverage?.wind_speed_records || 0) / (oceanKPIs?.total_records || 1) * 100).toFixed(0)}%` }}></div>
+                </div>
+              </div>
+              <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
                 <div className="flex gap-3">
-                  <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-sm font-medium text-blue-900">Healthy Range</p>
-                    <p className="text-xs text-blue-700 mt-1">All parameters within optimal ranges for marine life</p>
+                    <p className="text-sm font-medium text-green-900">All Systems Operational</p>
+                    <p className="text-xs text-green-700 mt-1">{oceanKPIs?.total_records || 0} total records from {oceanKPIs?.station_count || 0} stations</p>
                   </div>
                 </div>
               </div>
@@ -216,11 +209,11 @@ export default function DashboardPage() {
                 </div>
                 <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
                   <span className="font-medium text-gray-700">Total Biomass</span>
-                  <span className="text-lg font-bold text-blue-600">{(fisheriesMetrics.total_biomass / 1000).toFixed(1)}K tons</span>
+                  <span className="text-lg font-bold text-blue-600">{(fisheriesMetrics.avg_biomass / 1000).toFixed(1)}K tons</span>
                 </div>
                 <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
                   <span className="font-medium text-gray-700">Avg Biomass/Species</span>
-                  <span className="text-lg font-bold text-purple-600">{Math.round(fisheriesMetrics.total_biomass / fisheriesMetrics.species_count)} tons</span>
+                  <span className="text-lg font-bold text-purple-600">{Math.round(fisheriesMetrics.avg_biomass / fisheriesMetrics.species_count)} tons</span>
                 </div>
               </div>
             ) : (
@@ -261,7 +254,7 @@ export default function DashboardPage() {
         {/* Correlations */}
         <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm mb-8">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-gray-900">Environmental Correlations</h2>
+            <h2 className="text-xl font-bold text-gray-900">Species-Temperature Correlations</h2>
             <TrendingUp className="w-5 h-5 text-orange-600" />
           </div>
           {correlations.length > 0 ? (
@@ -271,9 +264,8 @@ export default function DashboardPage() {
                   <tr>
                     <th className="text-left py-3 px-4 font-semibold text-gray-700">Species</th>
                     <th className="text-left py-3 px-4 font-semibold text-gray-700">Temp (°C)</th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Salinity</th>
                     <th className="text-left py-3 px-4 font-semibold text-gray-700">Abundance</th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Oxygen</th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Correlation</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -281,9 +273,16 @@ export default function DashboardPage() {
                     <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50">
                       <td className="py-3 px-4 font-medium text-gray-900">{corr.species}</td>
                       <td className="py-3 px-4 text-gray-600">{parseFloat(corr.temperature).toFixed(1)}</td>
-                      <td className="py-3 px-4 text-gray-600">{parseFloat(corr.salinity).toFixed(1)}</td>
                       <td className="py-3 px-4 text-gray-600">{corr.abundance}</td>
-                      <td className="py-3 px-4 text-gray-600">{parseFloat(corr.oxygen).toFixed(1)}</td>
+                      <td className="py-3 px-4 text-gray-600">
+                        <span className={`inline-block px-2 py-1 rounded text-xs font-semibold ${
+                          corr.correlation_coefficient > 0.5 ? 'bg-green-100 text-green-800' :
+                          corr.correlation_coefficient < -0.5 ? 'bg-red-100 text-red-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {parseFloat(corr.correlation_coefficient).toFixed(3)}
+                        </span>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

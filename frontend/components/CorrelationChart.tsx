@@ -50,8 +50,8 @@ export default function CorrelationChart({ species, variable }: CorrelationChart
       {
         label: `${variable} vs Abundance`,
         data: data.map((d) => ({
-          x: parseFloat(d[variable]),
-          y: parseInt(d.abundance),
+          x: parseFloat(d.x_value),
+          y: parseInt(d.y_value),
         })),
         backgroundColor: '#1890ff',
       },
@@ -59,13 +59,13 @@ export default function CorrelationChart({ species, variable }: CorrelationChart
   };
 
   const correlation = calculateCorrelation(
-    data.map((d) => parseFloat(d[variable])),
-    data.map((d) => parseInt(d.abundance))
+    data.map((d) => parseFloat(d.x_value)),
+    data.map((d) => parseInt(d.y_value))
   );
 
   return (
-    <div>
-      <div className="mb-4 p-4 bg-blue-50 rounded-lg">
+    <div className="h-full flex flex-col">
+      <div className="mb-2 p-3 bg-blue-50 rounded-lg flex-shrink-0">
         <p className="text-sm text-gray-700">
           <strong>Correlation Coefficient:</strong>{' '}
           <span className={correlation > 0 ? 'text-green-600' : 'text-red-600'}>
@@ -81,26 +81,29 @@ export default function CorrelationChart({ species, variable }: CorrelationChart
         </p>
       </div>
 
-      <Scatter
-        data={scatterData}
-        options={{
-          responsive: true,
-          scales: {
-            x: {
-              title: {
-                display: true,
-                text: variable.charAt(0).toUpperCase() + variable.slice(1),
+      <div className="flex-1 min-h-0">
+        <Scatter
+          data={scatterData}
+          options={{
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              x: {
+                title: {
+                  display: true,
+                  text: variable.charAt(0).toUpperCase() + variable.slice(1),
+                },
+              },
+              y: {
+                title: {
+                  display: true,
+                  text: 'Abundance',
+                },
               },
             },
-            y: {
-              title: {
-                display: true,
-                text: 'Abundance',
-              },
-            },
-          },
-        }}
-      />
+          }}
+        />
+      </div>
     </div>
   );
 }

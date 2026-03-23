@@ -1,47 +1,38 @@
 import { Router, Request, Response } from 'express';
-import { query } from '../db/connection.js';
+import db from '../db/database.js';
 
 const router = Router();
 
 router.get('/', async (req: Request, res: Response) => {
   try {
-    const { species, season, minConfidence, region } = req.query;
+    const { species, minConfidence = '0', limit = '100' } = req.query;
 
-    let queryText = `
-      SELECT * FROM edna_data
-      WHERE 1=1
+    let query = `
+      SELECT
+        id, species, latitude, longitude, recorded_at,
+        concentration, confidence, depth, source
+      FROM edna_data
+      WHERE confidence >= $1
     `;
-    const params: any[] = [];
-    let paramCount = 1;
+    const params: any[] = [parseFloat(minConfidence as string)];
+    let paramCount = 2;
 
     if (species) {
-      queryText += ` AND species = $${paramCount}`;
-      params.push(species);
+      query += ` AND species ILIKE $${paramCount}`;
+      params.push(`%${species}%`);
       paramCount++;
     }
 
-    if (season) {
-      queryText += ` AND season = $${paramCount}`;
-      params.push(season);
-      paramCount++;
-    }
+    query += ` ORDER BY recorded_at DESC LIMIT $${paramCount}`;
+    params.push(parseInt(limit as string));
 
-    if (minConfidence) {
-      queryText += ` AND confidence >= $${paramCount}`;
-      params.push(minConfidence);
-      paramCount++;
-    }
+    const result = await db.query(query, params);
 
-    if (region) {
-      queryText += ` AND region = $${paramCount}`;
-      params.push(region);
-      paramCount++;
-    }
-
-    queryText += ` ORDER BY recorded_at DESC LIMIT 1000`;
-
-    const result = await query(queryText, params);
-    res.json({ success: true, data: result.rows });
+    res.json({
+      success: true,
+      data: result.rows,
+      count: result.rows.length
+    });
   } catch (error) {
     console.error('eDNA data error:', error);
     res.status(500).json({ success: false, error: 'Failed to fetch eDNA data' });
@@ -50,17 +41,19 @@ router.get('/', async (req: Request, res: Response) => {
 
 router.get('/concentration-trends', async (req: Request, res: Response) => {
   try {
-    const result = await query(`
+    const query = `
       SELECT
+        DATE_TRUNC('day', recorded_at) as date,
         species,
-        AVG(concentration) as avg_concentration,
+        ROUND(AVG(concentration)::numeric, 3) as avg_concentration,
         COUNT(*) as sample_count
       FROM edna_data
-      WHERE recorded_at >= NOW() - INTERVAL '90 days'
-      GROUP BY species
-      ORDER BY avg_concentration DESC
-      LIMIT 30
-    `);
+      WHERE recorded_at >= NOW() - INTERVAL '30 days'
+      GROUP BY DATE_TRUNC('day', recorded_at), species
+      ORDER BY date
+    `;
+
+    const result = await db.query(query);
 
     res.json({ success: true, data: result.rows });
   } catch (error) {
@@ -71,17 +64,19 @@ router.get('/concentration-trends', async (req: Request, res: Response) => {
 
 router.get('/depth-analysis', async (req: Request, res: Response) => {
   try {
-    const result = await query(`
+    const query = `
       SELECT
         depth,
-        AVG(concentration) as avg_concentration,
-        AVG(confidence) as avg_confidence,
-        COUNT(*) as sample_count
+        COUNT(*) as sample_count,
+        ROUND(AVG(concentration)::numeric, 3) as avg_concentration,
+        ROUND(AVG(confidence)::numeric, 2) as avg_confidence
       FROM edna_data
-      WHERE depth IS NOT NULL
+      WHERE recorded_at >= NOW() - INTERVAL '30 days'
       GROUP BY depth
-      ORDER BY depth ASC
-    `);
+      ORDER BY depth
+    `;
+
+    const result = await db.query(query);
 
     res.json({ success: true, data: result.rows });
   } catch (error) {
@@ -92,17 +87,30 @@ router.get('/depth-analysis', async (req: Request, res: Response) => {
 
 router.get('/seasonal', async (req: Request, res: Response) => {
   try {
-    const result = await query(`
+    const query = `
       SELECT
-        season,
+        CASE
+          WHEN EXTRACT(MONTH FROM recorded_at) IN (3, 4, 5) THEN 'Spring'
+          WHEN EXTRACT(MONTH FROM recorded_at) IN (6, 7, 8) THEN 'Summer'
+          WHEN EXTRACT(MONTH FROM recorded_at) IN (9, 10, 11) THEN 'Fall'
+          ELSE 'Winter'
+        END as season,
         species,
-        AVG(concentration) as avg_concentration,
+        ROUND(AVG(concentration)::numeric, 3) as avg_concentration,
         COUNT(*) as sample_count
       FROM edna_data
-      WHERE season IS NOT NULL
-      GROUP BY season, species
-      ORDER BY season, avg_concentration DESC
-    `);
+      GROUP BY
+        CASE
+          WHEN EXTRACT(MONTH FROM recorded_at) IN (3, 4, 5) THEN 'Spring'
+          WHEN EXTRACT(MONTH FROM recorded_at) IN (6, 7, 8) THEN 'Summer'
+          WHEN EXTRACT(MONTH FROM recorded_at) IN (9, 10, 11) THEN 'Fall'
+          ELSE 'Winter'
+        END,
+        species
+      ORDER BY season, species
+    `;
+
+    const result = await db.query(query);
 
     res.json({ success: true, data: result.rows });
   } catch (error) {
@@ -113,19 +121,20 @@ router.get('/seasonal', async (req: Request, res: Response) => {
 
 router.get('/confidence-distribution', async (req: Request, res: Response) => {
   try {
-    const result = await query(`
+    const query = `
       SELECT
         CASE
-          WHEN confidence >= 90 THEN 'High (90-100%)'
-          WHEN confidence >= 70 THEN 'Medium (70-89%)'
-          WHEN confidence >= 50 THEN 'Low (50-69%)'
-          ELSE 'Very Low (<50%)'
+          WHEN confidence < 0.6 THEN 'Low (< 0.6)'
+          WHEN confidence < 0.8 THEN 'Medium (0.6-0.8)'
+          ELSE 'High (>= 0.8)'
         END as confidence_range,
         COUNT(*) as count
       FROM edna_data
       GROUP BY confidence_range
-      ORDER BY MIN(confidence) DESC
-    `);
+      ORDER BY confidence_range
+    `;
+
+    const result = await db.query(query);
 
     res.json({ success: true, data: result.rows });
   } catch (error) {
@@ -136,16 +145,47 @@ router.get('/confidence-distribution', async (req: Request, res: Response) => {
 
 router.get('/species-list', async (req: Request, res: Response) => {
   try {
-    const result = await query(`
+    const query = `
       SELECT DISTINCT species
       FROM edna_data
-      ORDER BY species ASC
-    `);
+      ORDER BY species
+    `;
 
-    res.json({ success: true, data: result.rows });
+    const result = await db.query(query);
+
+    res.json({ success: true, data: result.rows.map(r => r.species) });
   } catch (error) {
     console.error('Species list error:', error);
     res.status(500).json({ success: false, error: 'Failed to fetch species list' });
+  }
+});
+
+router.get('/stats', async (req: Request, res: Response) => {
+  try {
+    const query = `
+      SELECT
+        COUNT(*) as total_samples,
+        ROUND(AVG(concentration)::numeric, 2) as avg_concentration,
+        COUNT(DISTINCT species) as species_detected,
+        ROUND(AVG(confidence)::numeric * 100, 0) as avg_confidence_pct
+      FROM edna_data
+    `;
+
+    const result = await db.query(query);
+    const stats = result.rows[0];
+
+    res.json({
+      success: true,
+      data: {
+        totalSamples: parseInt(stats.total_samples) || 0,
+        avgConcentration: parseFloat(stats.avg_concentration) || 0,
+        speciesDetected: parseInt(stats.species_detected) || 0,
+        avgConfidencePct: parseInt(stats.avg_confidence_pct) || 0
+      }
+    });
+  } catch (error) {
+    console.error('eDNA stats error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch eDNA stats' });
   }
 });
 

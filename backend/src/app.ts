@@ -7,62 +7,77 @@ import ednaRoutes from './routes/edna.js';
 import taxonomyRoutes from './routes/taxonomy.js';
 import correlationRoutes from './routes/correlation.js';
 import forecastMlRoutes from './routes/forecast-ml.js';
-import uploadRoutes from './routes/upload.js';
 import insightsRoutes from './routes/insights.js';
 import biodiversityRoutes from './routes/biodiversity.js';
 import geospatialRoutes from './routes/geospatial.js';
 import alertsRoutes from './routes/alerts.js';
+import initializeDatabase from './data/initDatabase.js';
+import seedDatabase from './data/seed.js';
+import db from './db/database.js';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+let databaseReady = false;
+
+// Initialize database on startup
+async function startup() {
+  try {
+    console.log('Testing database connection...');
+    const isConnected = await db.testConnection();
+
+    if (isConnected) {
+      console.log('Database connected successfully');
+      databaseReady = true;
+
+      // Initialize schema (schema already exists)
+      // await initializeDatabase();
+
+      // Skip seeding - using real pipeline data instead
+      // await seedDatabase();
+
+      console.log('✓ Database ready');
+    } else {
+      console.error('Failed to connect to database');
+      databaseReady = false;
+    }
+  } catch (error) {
+    console.error('Startup error:', error);
+  }
+}
+
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// Health check with system info
 app.get('/health', async (req, res) => {
-  const healthInfo = {
+  res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     version: '2.0.0',
     services: {
       api: 'operational',
-      database: 'checking...'
+      database: databaseReady ? 'connected' : 'disconnected',
+      dataSource: databaseReady ? 'active' : 'inactive'
     }
-  };
-
-  // Check database connectivity
-  try {
-    const { query } = await import('./db/connection.js');
-    await query('SELECT 1');
-    healthInfo.services.database = 'operational';
-  } catch (error) {
-    healthInfo.services.database = 'unavailable';
-  }
-
-  res.json(healthInfo);
+  });
 });
 
-// API Routes - Core Data
 app.use('/api/ocean', oceanRoutes);
 app.use('/api/fisheries', fisheriesRoutes);
 app.use('/api/edna', ednaRoutes);
 app.use('/api/taxonomy', taxonomyRoutes);
 app.use('/api/correlation', correlationRoutes);
 app.use('/api/forecast', forecastMlRoutes);
-app.use('/api/upload', uploadRoutes);
 
-// API Routes - Advanced Analytics
 app.use('/api/insights', insightsRoutes);
 app.use('/api/biodiversity', biodiversityRoutes);
 app.use('/api/geo', geospatialRoutes);
 app.use('/api/alerts', alertsRoutes);
 
-// Chatbot endpoint
 app.post('/api/chatbot', async (req, res) => {
   try {
     const { question } = req.body;
@@ -85,12 +100,15 @@ app.post('/api/chatbot', async (req, res) => {
   }
 });
 
-// Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error('Error:', err);
   res.status(500).json({ success: false, error: 'Internal server error' });
 });
 
-app.listen(PORT, () => {
-  console.log(`Backend server running on port ${PORT}`);
+// Start server and initialize database
+startup().then(() => {
+  app.listen(PORT, () => {
+    console.log(`Backend server running on port ${PORT}`);
+    console.log(`Database Status: ${databaseReady ? '✓ Ready' : '✗ Not Connected'}`);
+  });
 });

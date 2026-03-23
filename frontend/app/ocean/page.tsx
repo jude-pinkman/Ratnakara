@@ -73,15 +73,25 @@ export default function OceanPage() {
   }, []);
 
   const regions = [
+    'Pacific Northwest',
+    'Pacific Region',
     'Bay of Bengal',
     'Arabian Sea',
-    'Indian Ocean',
     'Andaman Sea',
-    'Lakshadweep Sea',
+    'Marine Zone',
   ];
 
+  const getRegion = (lat: number, lng: number): string => {
+    if (lng < -100 && lat > 40) return 'Pacific Northwest';
+    if (lng < -100) return 'Pacific Region';
+    if (lat > 28 && lng > 66) return 'Bay of Bengal';
+    if (lat > 14 && lng > 68 && lng < 80) return 'Arabian Sea';
+    if (lat < 12 && lng > 93) return 'Andaman Sea';
+    return 'Marine Zone';
+  };
+
   const regionCounts = geoData.reduce((acc: any, item: any) => {
-    const region = item.region || 'Unknown';
+    const region = getRegion(item.latitude, item.longitude);
     acc[region] = (acc[region] || 0) + 1;
     return acc;
   }, {});
@@ -95,14 +105,14 @@ export default function OceanPage() {
 
   const chartData = {
     labels: trends.map((t) =>
-      new Date(t.month).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
+      new Date(t.day).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
     ),
     datasets: [
       ...(activeParam === 'all' || activeParam === 'temperature'
         ? [
             {
               label: 'Temperature (°C)',
-              data: trends.map((t) => parseFloat(t.avg_temp)),
+              data: trends.map((t) => parseFloat(t.avg_temperature)),
               borderColor: paramColors.temperature.border,
               backgroundColor: paramColors.temperature.bg,
               fill: activeParam === 'temperature',
@@ -115,8 +125,8 @@ export default function OceanPage() {
       ...(activeParam === 'all' || activeParam === 'salinity'
         ? [
             {
-              label: 'Salinity (PSU)',
-              data: trends.map((t) => parseFloat(t.avg_salinity)),
+              label: 'Wave Height (m)',
+              data: trends.map((t) => parseFloat(t.avg_wave_height)),
               borderColor: paramColors.salinity.border,
               backgroundColor: paramColors.salinity.bg,
               fill: activeParam === 'salinity',
@@ -129,25 +139,11 @@ export default function OceanPage() {
       ...(activeParam === 'all' || activeParam === 'ph'
         ? [
             {
-              label: 'pH Level',
-              data: trends.map((t) => parseFloat(t.avg_ph)),
+              label: 'Wind Speed (m/s)',
+              data: trends.map((t) => parseFloat(t.avg_wind_speed)),
               borderColor: paramColors.ph.border,
               backgroundColor: paramColors.ph.bg,
               fill: activeParam === 'ph',
-              tension: 0.4,
-              pointRadius: 3,
-              pointHoverRadius: 6,
-            },
-          ]
-        : []),
-      ...(activeParam === 'all' || activeParam === 'oxygen'
-        ? [
-            {
-              label: 'Oxygen (mg/L)',
-              data: trends.map((t) => parseFloat(t.avg_oxygen)),
-              borderColor: paramColors.oxygen.border,
-              backgroundColor: paramColors.oxygen.bg,
-              fill: activeParam === 'oxygen',
               tension: 0.4,
               pointRadius: 3,
               pointHoverRadius: 6,
@@ -232,42 +228,45 @@ export default function OceanPage() {
                 <h3 className="text-sm opacity-90">Avg Temperature</h3>
                 <Thermometer className="w-5 h-5 opacity-80" />
               </div>
-              <p className="text-3xl font-bold">{parseFloat(kpis.avg_temp).toFixed(2)}°C</p>
-              <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/20">
+              <p className="text-3xl font-bold">{parseFloat(kpis.avg_temperature || 0).toFixed(2)}°C</p>
+              <div className="mt-3 pt-3 border-t border-white/20">
                 <span className="text-xs opacity-70">
-                  Min: {parseFloat(kpis.min_temp).toFixed(1)}°C
-                </span>
-                <span className="text-xs opacity-70">
-                  Max: {parseFloat(kpis.max_temp).toFixed(1)}°C
+                  Records: {kpis.data_coverage?.temperature_records || 0}
                 </span>
               </div>
             </div>
 
             <div className="kpi-card kpi-card-green">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm opacity-90">Avg Salinity</h3>
+                <h3 className="text-sm opacity-90">Avg Wave Height</h3>
                 <Droplets className="w-5 h-5 opacity-80" />
               </div>
-              <p className="text-3xl font-bold">{parseFloat(kpis.avg_salinity).toFixed(2)}</p>
-              <p className="text-xs opacity-70 mt-3">Practical Salinity Units (PSU)</p>
+              <p className="text-3xl font-bold">{parseFloat(kpis.avg_wave_height || 0).toFixed(2)} m</p>
+              <p className="text-xs opacity-70 mt-3">
+                Records: {kpis.data_coverage?.wave_height_records || 0}
+              </p>
             </div>
 
             <div className="kpi-card kpi-card-teal">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm opacity-90">Avg pH Level</h3>
+                <h3 className="text-sm opacity-90">Avg Wind Speed</h3>
                 <Activity className="w-5 h-5 opacity-80" />
               </div>
-              <p className="text-3xl font-bold">{parseFloat(kpis.avg_ph).toFixed(2)}</p>
-              <p className="text-xs opacity-70 mt-3">Ocean Acidity Index</p>
+              <p className="text-3xl font-bold">{parseFloat(kpis.avg_wind_speed || 0).toFixed(2)} m/s</p>
+              <p className="text-xs opacity-70 mt-3">
+                Records: {kpis.data_coverage?.wind_speed_records || 0}
+              </p>
             </div>
 
             <div className="kpi-card kpi-card-orange">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm opacity-90">Avg Dissolved Oxygen</h3>
+                <h3 className="text-sm opacity-90">Total Records</h3>
                 <Wind className="w-5 h-5 opacity-80" />
               </div>
-              <p className="text-3xl font-bold">{parseFloat(kpis.avg_oxygen).toFixed(2)}</p>
-              <p className="text-xs opacity-70 mt-3">mg/L average</p>
+              <p className="text-3xl font-bold">{kpis.total_records}</p>
+              <p className="text-xs opacity-70 mt-3">
+                From {kpis.station_count} stations
+              </p>
             </div>
           </div>
         )}

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { FileCode2, Copy, Check, ChevronDown, ChevronRight, ExternalLink, Zap, Database, Map, TrendingUp, Bell, Dna, Fish, Droplets } from 'lucide-react';
+import { FileCode2, Copy, Check, ChevronDown, ChevronRight, ExternalLink, Zap, Map, TrendingUp, Bell, Dna, Fish, Droplets } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 
@@ -255,16 +255,6 @@ const apiEndpoints: ApiCategory[] = [
       { method: 'POST', path: '/api/forecast/predict/regression', description: 'Predict abundance from features', body: { data: [{ temperature: 28, salinity: 34 }] } },
     ],
   },
-  {
-    category: 'Upload',
-    icon: Database,
-    color: 'orange',
-    description: 'Data import functionality',
-    endpoints: [
-      { method: 'POST', path: '/api/upload/upload', description: 'Upload CSV/Excel file for import', body: { file: 'multipart/form-data (max 50MB)' } },
-      { method: 'GET', path: '/api/upload/health', description: 'Check upload service health' },
-    ],
-  },
 ];
 
 const colorClasses: Record<string, { bg: string; text: string; border: string }> = {
@@ -276,7 +266,6 @@ const colorClasses: Record<string, { bg: string; text: string; border: string }>
   emerald: { bg: 'bg-emerald-50', text: 'text-emerald-600', border: 'border-emerald-200' },
   violet: { bg: 'bg-violet-50', text: 'text-violet-600', border: 'border-violet-200' },
   indigo: { bg: 'bg-indigo-50', text: 'text-indigo-600', border: 'border-indigo-200' },
-  orange: { bg: 'bg-orange-50', text: 'text-orange-600', border: 'border-orange-200' },
 };
 
 const methodColors: Record<string, string> = {

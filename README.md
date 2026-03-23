@@ -1,318 +1,179 @@
-# AI-Driven Unified Marine Data Platform
+# 🌊 Marine Data Platform - Quick Start
 
-A comprehensive full-stack platform integrating oceanographic data, fisheries monitoring, eDNA biodiversity analysis, taxonomy classification, and AI-powered analytics.
-
-## Technology Stack
-
-### Frontend
-- Next.js 14 (React)
-- TypeScript
-- Tailwind CSS
-- Chart.js & Recharts
-- Leaflet.js (Maps)
-
-### Backend
-- Node.js + Express
-- TypeScript
-- PostgreSQL
-
-### ML/AI
-- Python 3.10+
-- FastAPI
-- TensorFlow/Keras (LSTM)
-- scikit-learn (Random Forest, Regression)
-
-## Features
-
-1. **Ocean Data Module** - Temperature, salinity, pH, oxygen monitoring with KPIs and trend analysis
-2. **Fisheries Module** - Fish abundance, biomass, diversity tracking with geospatial mapping
-3. **eDNA Module** - Environmental DNA analysis with concentration trends and confidence metrics
-4. **Taxonomy Module** - Hierarchical species classification browser
-5. **Visualization Dashboard** - Advanced filtering and stacked charts
-6. **Correlation Analysis** - Environmental factors vs fish abundance with scatter plots
-7. **AI Forecasting** - LSTM-based population predictions
-8. **AI Chatbot** - Natural language Q&A system
-9. **API Documentation** - Complete REST API reference
-
-## Setup Instructions
+## ⚡ 5-Minute Setup
 
 ### Prerequisites
+- Python 3.9+
+- Node.js 18+
+- PostgreSQL 14+ with PostGIS
 
-- Node.js 18+ and npm
-- Python 3.10+
-- Neon PostgreSQL project (or PostgreSQL 14+ for local fallback)
-- Git
+### 1. Database Setup (Choose One)
 
-### 1. Database Setup
-
+**Option A: Supabase (Recommended)**
 ```bash
-# Create a Neon project and copy the connection string.
-# Example format:
-# postgresql://user:password@host/dbname?sslmode=require&channel_binding=require
-
-# Run schema
-cd marine-data-platform/backend
-psql "${DATABASE_URL}" -f src/db/schema.sql
+# 1. Create project at supabase.com
+# 2. Copy connection string
+# 3. Run schema
+psql [CONNECTION_STRING] -f marine-pipeline-service/schema.sql
 ```
 
-### 2. Backend Setup
+**Option B: Local PostgreSQL**
+```bash
+createdb marine_data
+psql marine_data -c "CREATE EXTENSION postgis;"
+psql marine_data -f marine-pipeline-service/schema.sql
+```
+
+### 2. Configure Environment
 
 ```bash
-cd marine-data-platform/backend
-
-# Copy environment file
+# Backend
+cd backend
 cp .env.example .env
+# Edit DATABASE_URL
 
-# Update .env with your Neon connection string
-# DATABASE_URL=postgresql://user:password@host/dbname?sslmode=require&channel_binding=require
+# Pipeline
+cd ../marine-pipeline-service
+cp .env.example .env
+# Edit DATABASE_URL
 
-# Optional local fallback variables
-# DB_HOST=localhost
-# DB_PORT=5432
-# DB_NAME=marine_data
-# DB_USER=postgres
-# DB_PASSWORD=your_password
+# Frontend
+cd ../frontend
+echo "NEXT_PUBLIC_API_URL=http://localhost:3001" > .env.local
+```
 
-# Install dependencies
-npm install
+### 3. Install Dependencies
 
-# Seed database with synthetic data
-npm run seed
+```bash
+# Backend
+cd backend && npm install
 
-# Start backend server
+# Frontend
+cd ../frontend && npm install
+
+# Pipeline
+cd ../marine-pipeline-service
+pip install -r requirements.txt
+```
+
+### 4. Start Services (4 Terminals)
+
+**Terminal 1 - Backend:**
+```bash
+cd backend
 npm run dev
 ```
 
-Backend will run on `http://localhost:3001`
-
-### 3. ML Service Setup
-
+**Terminal 2 - Frontend:**
 ```bash
-cd marine-data-platform/ml-service
-
-# Create virtual environment with Python 3.10 (required)
-python3.10 -m venv venv
-
-# Activate virtual environment
-# Windows:
-venv\Scripts\activate
-# macOS/Linux:
-source venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Create models directory
-mkdir -p models/saved
-
-# Train models (optional - models auto-initialize)
-python train/train_lstm.py
-python train/train_rf.py
-python train/train_regression.py
-
-# Start ML service
-python main.py
-```
-
-ML service will run on `http://localhost:8000`
-
-### 4. Frontend Setup
-
-```bash
-cd marine-data-platform/frontend
-
-# Copy environment file
-cp .env.example .env
-
-# Install dependencies
-npm install
-
-# Start development server
+cd frontend
 npm run dev
 ```
 
-Frontend will run on `http://localhost:3000`
-
-### 5. Access the Application
-
-Open your browser and navigate to:
-- **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:3001
-- **ML Service**: http://localhost:8000
-- **API Docs**: http://localhost:8000/docs (FastAPI auto-docs)
-
-## Project Structure
-
-```
-marine-data-platform/
-├── frontend/              # Next.js React application
-│   ├── app/              # App router pages
-│   ├── components/       # React components
-│   └── lib/              # API utilities
-├── backend/              # Express API server
-│   ├── src/
-│   │   ├── routes/      # API endpoints
-│   │   ├── db/          # Database connection & schema
-│   │   └── data/        # Data seeding scripts
-└── ml-service/           # Python ML service
-    ├── models/          # ML model implementations
-    ├── train/           # Training scripts
-    └── main.py          # FastAPI application
-```
-
-## API Endpoints
-
-### Ocean Data
-- `GET /api/ocean` - Retrieve ocean data
-- `GET /api/ocean/kpis` - Key performance indicators
-- `GET /api/ocean/trends` - Monthly trends
-- `GET /api/ocean/geospatial` - Station locations
-
-### Fisheries Data
-- `GET /api/fisheries` - Retrieve fisheries data
-- `GET /api/fisheries/metrics` - Aggregate metrics
-- `GET /api/fisheries/species-distribution` - Species breakdown
-- `GET /api/fisheries/temporal` - Time-series data
-- `GET /api/fisheries/geospatial` - Fishing zones
-
-### eDNA Data
-- `GET /api/edna` - Retrieve eDNA samples
-- `GET /api/edna/concentration-trends` - Concentration analysis
-- `GET /api/edna/depth-analysis` - Depth vs concentration
-- `GET /api/edna/seasonal` - Seasonal patterns
-- `GET /api/edna/confidence-distribution` - Confidence metrics
-
-### Taxonomy
-- `GET /api/taxonomy` - All taxonomic records
-- `GET /api/taxonomy/tree` - Hierarchical tree
-- `GET /api/taxonomy/species/:species` - Species details
-- `GET /api/taxonomy/search?q={query}` - Search taxonomy
-
-### Correlations
-- `GET /api/correlation` - Correlation data
-- `GET /api/correlation/environmental-impact` - Coefficient analysis
-- `GET /api/correlation/scatter/:variable` - Scatter plot data
-
-### Forecasting
-- `GET /api/forecast` - Existing forecasts
-- `POST /api/forecast/generate` - Generate predictions
-
-### Chatbot
-- `POST /api/chatbot` - Ask questions
-
-## ML Models
-
-### LSTM Forecasting
-Predicts future fish populations based on historical time-series data. Uses Long Short-Term Memory neural networks for sequence modeling.
-
-### Random Forest Classification
-Classifies abundance levels (low/medium/high) based on environmental parameters (temperature, salinity, pH, oxygen).
-
-### Linear Regression
-Predicts exact abundance values from environmental conditions. Calculates environmental impact scenarios.
-
-## Data
-
-Platform includes 180+ geospatial monitoring stations across Indian marine regions:
-- Bay of Bengal
-- Arabian Sea
-- Indian Ocean
-- Andaman Sea
-- Lakshadweep Sea
-
-Features 15+ marine species including:
-- Indian Oil Sardine
-- Indian Mackerel
-- Yellowfin Tuna
-- Giant Tiger Prawn
-- Barramundi
-
-## Development
-
-### Backend Development
+**Terminal 3 - Initial Data:**
 ```bash
-cd backend
-npm run dev  # Auto-reload on changes
+cd marine-pipeline-service
+python run_pipeline.py all
 ```
 
-### Frontend Development
+**Terminal 4 - Scheduler:**
 ```bash
-cd frontend
-npm run dev  # Hot reload enabled
+cd marine-pipeline-service
+python orchestrator.py
 ```
 
-### ML Service Development
-```bash
-cd ml-service
-uvicorn main:app --reload
+### 5. Open Dashboard
+
+```
+http://localhost:3000
 ```
 
-## Production Build
+## 🎯 What You Get
 
-### Backend
-```bash
-cd backend
-npm run build
-npm start
+- ✅ Real NOAA ocean data (every hour)
+- ✅ Smart mock fisheries data
+- ✅ Smart mock eDNA data
+- ✅ Auto-calculated correlations
+- ✅ Live-updating dashboard (30s refresh)
+
+## 📊 System Flow
+
+```
+NOAA API → Ocean Data → Mock Fisheries → Mock eDNA → Correlations
+                ↓
+         PostgreSQL Database
+                ↓
+           Node.js API
+                ↓
+         Next.js Dashboard
+          (updates every 30s)
 ```
 
-### Frontend
-```bash
-cd frontend
-npm run build
-npm start
-```
-
-### ML Service
-```bash
-cd ml-service
-uvicorn main:app --host 0.0.0.0 --port 8000
-```
-
-## Troubleshooting
-
-### Database Connection Issues
-- Verify `DATABASE_URL` is set in backend `.env`
-- Confirm Neon connection string includes `sslmode=require`
-- Test with: `psql "$DATABASE_URL" -c "SELECT 1;"`
-
-### Port Already in Use
-- Backend: Change `PORT` in `.env`
-- Frontend: Use `PORT=3001 npm run dev`
-- ML Service: `uvicorn main:app --port 8001`
-
-### Missing Dependencies
-```bash
-# Backend/Frontend
-npm install
-
-# ML Service
-pip install -r requirements.txt
-```
-
-### ML install fails on Python 3.13 (`Cannot import 'setuptools.build_meta'`)
-- This ML stack is pinned for Python 3.10.x.
-- Recreate the virtual environment with Python 3.10 and reinstall:
+## 🔍 Verify It Works
 
 ```bash
-cd ml-service
-deactivate 2>/dev/null || true
-rm -rf venv
-python3.10 -m venv venv
-source venv/bin/activate
-python -m pip install --upgrade pip setuptools wheel
-pip install -r requirements.txt
+# Check data
+psql marine_data -c "SELECT COUNT(*) FROM ocean_data;"
+psql marine_data -c "SELECT COUNT(*) FROM fisheries_data;"
+
+# Test API
+curl http://localhost:3001/api/ocean
+curl http://localhost:3001/api/fisheries
 ```
 
-### Leaflet Map Not Displaying
-- Check browser console for errors
-- Ensure Leaflet CSS is loaded
-- Verify geospatial data is populated
+## 📚 Full Documentation
 
-## License
+See [SETUP_GUIDE.md](./SETUP_GUIDE.md) for:
+- Detailed architecture
+- Troubleshooting
+- Production deployment
+- API reference
 
-MIT License
+## 🚀 Production Deployment
 
-## Contact
+1. **Database**: Use Supabase free tier
+2. **Backend**: Deploy to Railway/Heroku
+3. **Frontend**: Deploy to Vercel
+4. **Pipeline**: Deploy as background worker
 
-For issues and questions, create an issue in the project repository.
+```bash
+# Frontend
+cd frontend && vercel deploy
+
+# Backend + Pipeline
+# Use Railway/Heroku with Procfile:
+# web: cd backend && npm start
+# worker: cd marine-pipeline-service && python orchestrator.py
+```
+
+## 🧪 Quick Test
+
+```bash
+# Run one pipeline manually
+cd marine-pipeline-service
+python run_pipeline.py noaa
+
+# Check results
+curl http://localhost:3001/api/ocean | jq '.data | length'
+```
+
+## 🎓 Key Files
+
+- `marine-pipeline-service/schema.sql` - Database structure
+- `marine-pipeline-service/orchestrator.py` - Automated scheduler
+- `backend/src/db/database.ts` - Database connection
+- `frontend/hooks/useLiveData.ts` - Live polling hook
+
+## 🐛 Common Issues
+
+**"No ocean data"**: Run `python run_pipeline.py noaa` first
+
+**"Connection refused"**: Check DATABASE_URL in `.env` files
+
+**Empty dashboard**: Wait 30 seconds for first poll, or check backend logs
+
+---
+
+**That's it! You now have a working marine data platform.** 🌊🐟🧬
+
+For detailed setup, see [SETUP_GUIDE.md](./SETUP_GUIDE.md)

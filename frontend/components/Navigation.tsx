@@ -19,7 +19,6 @@ import {
   Compass,
   Map,
   TrendingUp,
-  Upload,
   Brain,
 } from 'lucide-react';
 
@@ -32,7 +31,6 @@ const navItems = [
   { name: 'Biodiversity', path: '/biodiversity', icon: TreeDeciduous },
   { name: 'Forecast', path: '/forecast', icon: TrendingUp },
   { name: 'Correlations', path: '/correlations', icon: GitBranch },
-  { name: 'Upload', path: '/upload', icon: Upload },
   { name: 'API Docs', path: '/api-docs', icon: FileCode2 },
 ];
 

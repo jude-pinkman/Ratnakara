@@ -45,7 +45,10 @@ export default function CorrelationsPage() {
         setEnvironmentalImpact(impactRes.data.data);
         setSpeciesList(speciesRes.data.data);
         if (speciesRes.data.data.length > 0) {
-          setSelectedSpecies(speciesRes.data.data[0].species);
+          const firstSpecies = typeof speciesRes.data.data[0] === 'string'
+            ? speciesRes.data.data[0]
+            : speciesRes.data.data[0].species;
+          setSelectedSpecies(firstSpecies);
         }
       } catch (error) {
         console.error('Failed to fetch correlation data:', error);
@@ -377,11 +380,14 @@ export default function CorrelationsPage() {
                 value={selectedSpecies}
                 onChange={(e) => setSelectedSpecies(e.target.value)}
               >
-                {speciesList.map((s) => (
-                  <option key={s.species} value={s.species}>
-                    {s.species}
-                  </option>
-                ))}
+                {speciesList.map((s, idx) => {
+                  const speciesValue = typeof s === 'string' ? s : s.species;
+                  return (
+                    <option key={`${speciesValue}-${idx}`} value={speciesValue}>
+                      {speciesValue}
+                    </option>
+                  );
+                })}
               </select>
             </div>
 

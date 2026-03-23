@@ -1,15 +1,67 @@
 'use client';
 
-import { MapContainer, TileLayer, CircleMarker, Popup, Tooltip } from 'react-leaflet';
+import { MapContainer, TileLayer, CircleMarker, Popup, Tooltip, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
+import { useEffect } from 'react';
 
 interface MapViewProps {
   data: any[];
   type: 'ocean' | 'fisheries' | 'edna';
 }
 
+// Component to fit map bounds to data
+function FitBounds({ data }: { data: any[] }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (data && data.length > 0) {
+      const validPoints = data.filter(
+        (item) => item.latitude && item.longitude &&
+        !isNaN(parseFloat(item.latitude)) && !isNaN(parseFloat(item.longitude))
+      );
+
+      if (validPoints.length > 0) {
+        const lats = validPoints.map((item) => parseFloat(item.latitude));
+        const lngs = validPoints.map((item) => parseFloat(item.longitude));
+
+        const minLat = Math.min(...lats);
+        const maxLat = Math.max(...lats);
+        const minLng = Math.min(...lngs);
+        const maxLng = Math.max(...lngs);
+
+        // Add some padding
+        const latPadding = (maxLat - minLat) * 0.2 || 5;
+        const lngPadding = (maxLng - minLng) * 0.2 || 5;
+
+        map.fitBounds([
+          [minLat - latPadding, minLng - lngPadding],
+          [maxLat + latPadding, maxLng + lngPadding]
+        ]);
+      }
+    }
+  }, [data, map]);
+
+  return null;
+}
+
 export default function MapView({ data, type }: MapViewProps) {
-  const center: [number, number] = [15, 80];
+  // Calculate center from data, or use default
+  const getCenter = (): [number, number] => {
+    if (data && data.length > 0) {
+      const validPoints = data.filter(
+        (item) => item.latitude && item.longitude &&
+        !isNaN(parseFloat(item.latitude)) && !isNaN(parseFloat(item.longitude))
+      );
+      if (validPoints.length > 0) {
+        const avgLat = validPoints.reduce((sum, item) => sum + parseFloat(item.latitude), 0) / validPoints.length;
+        const avgLng = validPoints.reduce((sum, item) => sum + parseFloat(item.longitude), 0) / validPoints.length;
+        return [avgLat, avgLng];
+      }
+    }
+    return [20, -100]; // Default to Pacific
+  };
+
+  const center = getCenter();
 
   const getColor = (type: string) => {
     switch (type) {
@@ -118,13 +170,14 @@ export default function MapView({ data, type }: MapViewProps) {
     <div className="w-full h-full rounded-lg overflow-hidden">
       <MapContainer
         center={center}
-        zoom={5}
+        zoom={4}
         style={{ height: '100%', width: '100%' }}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
         />
+        <FitBounds data={data} />
         {data.map((item, index) => (
           <CircleMarker
             key={index}
@@ -137,7 +190,7 @@ export default function MapView({ data, type }: MapViewProps) {
             fillOpacity={0.7}
           >
             <Tooltip direction="top" offset={[0, -10]} opacity={0.9}>
-              <span style={{ fontWeight: 500 }}>{item.location || item.station_name || 'Station'}</span>
+              <span style={{ fontWeight: 500 }}>{item.species || item.location || item.station_name || 'Station'}</span>
             </Tooltip>
             <Popup>
               <div dangerouslySetInnerHTML={{ __html: getPopupContent(item, type) }} />

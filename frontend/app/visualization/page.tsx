@@ -52,6 +52,7 @@ export default function VisualizationPage() {
   // Filters
   const [selectedSpecies, setSelectedSpecies] = useState<string>('all');
   const [selectedRegion, setSelectedRegion] = useState<string>('all');
+  const [selectedYear, setSelectedYear] = useState<string>('all');
   const [comparisonMode, setComparisonMode] = useState(false);
 
   // Refs for chart exports
@@ -70,12 +71,13 @@ export default function VisualizationPage() {
 
   async function fetchAllData() {
     try {
+      const params = selectedYear === 'all' ? {} : { year: Number(selectedYear) };
       const [temporalRes, geoRes, metricsRes, distRes, corrRes] = await Promise.all([
-        fisheriesAPI.getTemporal(),
-        fisheriesAPI.getGeospatial(),
-        fisheriesAPI.getMetrics(),
-        fisheriesAPI.getSpeciesDistribution(),
-        correlationAPI.getScatter('temperature'),
+        fisheriesAPI.getTemporal(params),
+        fisheriesAPI.getGeospatial(params),
+        fisheriesAPI.getMetrics(params),
+        fisheriesAPI.getSpeciesDistribution(params),
+        correlationAPI.getScatter('temperature', params),
       ]);
 
       setTemporalData(temporalRes.data.data || []);
@@ -92,7 +94,9 @@ export default function VisualizationPage() {
 
   useEffect(() => {
     fetchAllData();
-  }, []);
+  }, [selectedYear]);
+
+  const yearOptions = Array.from({ length: 10 }, (_, index) => (new Date().getFullYear() - index).toString());
 
   // Process temporal data based on filters
   const processedData = temporalData
@@ -249,7 +253,23 @@ export default function VisualizationPage() {
               <span className="font-medium text-gray-700">Filters</span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">Year</label>
+                <select
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(e.target.value)}
+                  className="select text-sm w-full"
+                >
+                  <option value="all">All Years</option>
+                  {yearOptions.map((year) => (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <div>
                 <label className="text-xs text-gray-500 mb-1 block">Species</label>
                 <select

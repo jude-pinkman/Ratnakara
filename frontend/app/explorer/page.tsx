@@ -121,8 +121,8 @@ export default function ExplorerPage() {
       }
     } catch (error) {
       console.error('Failed to fetch clusters:', error);
-      // Use mock data if API fails
-      setMarkers(generateMockMarkers());
+      setMarkers([]);
+      toast.error('Failed to load map clusters from API');
     } finally {
       setLoading(false);
     }
@@ -144,15 +144,16 @@ export default function ExplorerPage() {
       }
     } catch (error) {
       console.error('Failed to fetch heatmap:', error);
-      setHeatmapData(generateMockHeatmap());
+      setHeatmapData([]);
+      toast.error('Failed to load heatmap data');
     }
   }, [heatmapParam, showHeatmap]);
 
   // Fetch location-specific data
-  const fetchLocationData = useCallback(async (lat: number, lng: number) => {
+  const fetchLocationData = useCallback(async (lat: number, lng: number, radiusKm: number = 25) => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE}/api/geo/point/${lat}/${lng}?radius=25`);
+      const response = await fetch(`${API_BASE}/api/geo/point/${lat}/${lng}?radius=${radiusKm}`);
       const result = await response.json();
 
       if (result.success) {
@@ -160,7 +161,8 @@ export default function ExplorerPage() {
       }
     } catch (error) {
       console.error('Failed to fetch location data:', error);
-      setLocationData(generateMockLocationData(lat, lng));
+      setLocationData(null);
+      toast.error('Failed to load selected location details');
     } finally {
       setLoading(false);
     }
@@ -177,7 +179,7 @@ export default function ExplorerPage() {
       }
     } catch (error) {
       console.error('Failed to fetch insights:', error);
-      setInsights(generateMockInsights());
+      setInsights([]);
     }
   }, []);
 
@@ -192,7 +194,7 @@ export default function ExplorerPage() {
       }
     } catch (error) {
       console.error('Failed to fetch regions:', error);
-      setRegions(generateMockRegions());
+      setRegions([]);
     }
   }, []);
 
@@ -302,14 +304,16 @@ export default function ExplorerPage() {
   // Handle map click
   const handleMapClick = (lat: number, lng: number) => {
     setSelectedLocation({ lat, lng });
-    fetchLocationData(lat, lng);
+    fetchLocationData(lat, lng, 25);
     setSidebarOpen(true);
     toast.success(`Location selected: ${lat.toFixed(4)}°N, ${lng.toFixed(4)}°E`);
   };
 
   // Handle marker click
   const handleMarkerClick = (marker: MapMarker) => {
-    handleMapClick(marker.lat, marker.lng);
+    setSelectedLocation({ lat: marker.lat, lng: marker.lng });
+    fetchLocationData(marker.lat, marker.lng, 150);
+    setSidebarOpen(true);
   };
 
   // Handle search result click

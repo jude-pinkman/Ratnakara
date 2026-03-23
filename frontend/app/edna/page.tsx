@@ -42,11 +42,13 @@ export default function EdnaPage() {
   const [seasonalData, setSeasonalData] = useState<any[]>([]);
   const [confidenceData, setConfidenceData] = useState<any[]>([]);
   const [speciesList, setSpeciesList] = useState<string[]>([]);
+  const [stats, setStats] = useState<any>({ totalSamples: 0, avgConcentration: 0, speciesDetected: 0, avgConfidencePct: 0 });
   const [loading, setLoading] = useState(true);
 
   const [selectedSpecies, setSelectedSpecies] = useState<string>('all');
   const [selectedSeason, setSelectedSeason] = useState<string>('all');
   const [depthRange, setDepthRange] = useState<string>('all');
+  const [selectedYear, setSelectedYear] = useState<string>('all');
   const [comparisonMode, setComparisonMode] = useState(false);
   const [clickedSpecies, setClickedSpecies] = useState<string | null>(null);
 
@@ -66,12 +68,14 @@ export default function EdnaPage() {
 
   async function fetchAllData() {
     try {
-      const [concRes, depthRes, seasonRes, confRes, speciesRes] = await Promise.all([
-        ednaAPI.getConcentrationTrends(),
-        ednaAPI.getDepthAnalysis(),
-        ednaAPI.getSeasonal(),
-        ednaAPI.getConfidenceDistribution(),
-        ednaAPI.getSpeciesList(),
+      const params = selectedYear === 'all' ? {} : { year: Number(selectedYear) };
+      const [concRes, depthRes, seasonRes, confRes, speciesRes, statsRes] = await Promise.all([
+        ednaAPI.getConcentrationTrends(params),
+        ednaAPI.getDepthAnalysis(params),
+        ednaAPI.getSeasonal(params),
+        ednaAPI.getConfidenceDistribution(params),
+        ednaAPI.getSpeciesList(params),
+        ednaAPI.getStats(),
       ]);
 
       setConcentration(concRes.data.data);
@@ -79,6 +83,7 @@ export default function EdnaPage() {
       setSeasonalData(seasonRes.data.data);
       setConfidenceData(confRes.data.data);
       setSpeciesList(speciesRes.data.data || []);
+      setStats(statsRes.data.data || { totalSamples: 0, avgConcentration: 0, speciesDetected: 0, avgConfidencePct: 0 });
     } catch (error) {
       console.error('Failed to fetch eDNA data:', error);
     } finally {
@@ -88,7 +93,9 @@ export default function EdnaPage() {
 
   useEffect(() => {
     fetchAllData();
-  }, []);
+  }, [selectedYear]);
+
+  const yearOptions = Array.from({ length: 10 }, (_, index) => (new Date().getFullYear() - index).toString());
 
   // Apply filters
   const filteredConcentration = concentration.filter((c) => {
@@ -112,13 +119,10 @@ export default function EdnaPage() {
     return true;
   });
 
-  const totalSamples = filteredConcentration.reduce((sum, c) => sum + parseInt(c.sample_count || 0), 0);
-  const avgConcentration = filteredConcentration.length > 0
-    ? (filteredConcentration.reduce((sum, c) => sum + parseFloat(c.avg_concentration || 0), 0) / filteredConcentration.length).toFixed(2)
-    : '0';
-  const avgConfidence = confidenceData.length > 0
-    ? (confidenceData.reduce((sum, c) => sum + parseInt(c.count || 0), 0) / confidenceData.length).toFixed(0)
-    : '0';
+  // Use stats from the dedicated endpoint for accurate KPIs
+  const totalSamples = stats.totalSamples;
+  const avgConcentration = stats.avgConcentration.toFixed(2);
+  const avgConfidence = stats.avgConfidencePct;
 
   const concentrationGradients = filteredConcentration.slice(0, 12).map((_, idx) => {
     const hue = 270 - (idx * 15);
@@ -247,7 +251,23 @@ export default function EdnaPage() {
               <span className="font-medium text-gray-700">Filters & Options</span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">Year</label>
+                <select
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(e.target.value)}
+                  className="select text-sm py-2 w-full"
+                >
+                  <option value="all">All Years</option>
+                  {yearOptions.map((year) => (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <div>
                 <label className="text-xs text-gray-500 mb-1 block">Species</label>
                 <select
@@ -374,7 +394,7 @@ export default function EdnaPage() {
               <h3 className="text-sm opacity-90">Species Detected</h3>
               <Dna className="w-5 h-5 opacity-80" />
             </div>
-            <p className="text-3xl font-bold">{filteredConcentration.length}</p>
+            <p className="text-3xl font-bold">{stats.speciesDetected}</p>
             <p className="text-sm opacity-70 mt-2">Unique species</p>
           </motion.div>
 
