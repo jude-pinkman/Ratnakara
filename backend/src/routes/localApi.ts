@@ -1,7 +1,24 @@
 import { Router, Request, Response } from 'express';
 import { getPostgresPool } from '../db/postgres.js';
+import * as fs from 'fs';
+import * as path from 'path';
+import { fileURLToPath } from 'url';
 
 const router = Router();
+
+// Load species locations data
+let speciesLocationsData: any = null;
+try {
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = path.dirname(__filename);
+  const dataPath = path.join(__dirname, '../data/species_locations.json');
+  if (fs.existsSync(dataPath)) {
+    const rawData = fs.readFileSync(dataPath, 'utf-8');
+    speciesLocationsData = JSON.parse(rawData);
+  }
+} catch (e) {
+  console.warn('Species locations data not loaded:', e);
+}
 
 const speciesCatalog = [
   { species: 'Sardinella longiceps', common_name: 'Indian Oil Sardine', kingdom: 'Animalia', phylum: 'Chordata', class_name: 'Actinopterygii', order_name: 'Clupeiformes', family: 'Clupeidae', genus: 'Sardinella' },
@@ -1040,6 +1057,128 @@ router.get('/alerts/summary', (req: Request, res: Response) => {
 
 router.post('/alerts/:id/acknowledge', (req: Request, res: Response) => {
   res.json({ success: true, id: req.params.id, acknowledged: true, acknowledgedBy: req.body.acknowledgedBy || 'user' });
+});
+
+// Species Locations (India-only from taxonomy dataset)
+router.get('/species-locations', (req: Request, res: Response) => {
+  if (!speciesLocationsData) {
+    return res.json({ success: false, error: 'Species locations data not available' });
+  }
+  res.json({ success: true, data: speciesLocationsData });
+});
+
+router.get('/species-locations/search', (req: Request, res: Response) => {
+  if (!speciesLocationsData) {
+    return res.json({ success: false, error: 'Species locations data not available' });
+  }
+
+  const query = String(req.query.q || '').toLowerCase().trim();
+  if (!query) {
+    return res.json({ success: false, error: 'Query parameter required' });
+  }
+
+  // Search in species names
+  const matches = speciesLocationsData.species.filter((sp: any) =>
+    sp.scientificName.toLowerCase().includes(query)
+  );
+
+  if (matches.length === 0) {
+    return res.json({ success: true, data: null, message: 'No species found matching the query' });
+  }
+
+  // Return the best match (first result)
+  const match = matches[0];
+  res.json({
+    success: true,
+    data: match,
+    searchQuery: query,
+    matchCount: matches.length,
+  });
+});
+
+router.get('/species-locations/by-name/:species', (req: Request, res: Response) => {
+  if (!speciesLocationsData) {
+    return res.json({ success: false, error: 'Species locations data not available' });
+  }
+
+  const speciesName = String(req.params.species).replace(/_/g, ' ');
+  const match = speciesLocationsData.species.find((sp: any) =>
+    sp.scientificName.toLowerCase() === speciesName.toLowerCase()
+  );
+
+  if (!match) {
+    return res.json({ success: true, data: null, message: 'Species not found in India dataset' });
+  }
+
+  res.json({ success: true, data: match });
+});
+
+router.get('/species-locations/nearby/:lat/:lng', (req: Request, res: Response) => {
+  if (!speciesLocationsData) {
+    return res.json({ success: false, error: 'Species locations data not available' });
+  }
+
+  const lat = Number(req.params.lat);
+  const lng = Number(req.params.lng);
+  const radiusKm = Number(req.query.radius || 100);
+
+  // Convert km to degrees (roughly 1 degree = 111 km)
+  const radiusDeg = radiusKm / 111;
+
+  const nearbySpecies: any[] = [];
+
+  speciesLocationsData.species.forEach((species: any) => {
+    species.locations.forEach((loc: any) => {
+      const distance = Math.hypot(lat - loc.latitude, lng - loc.longitude);
+      if (distance <= radiusDeg) {
+        nearbySpecies.push({
+          scientificName: species.scientificName,
+          location: loc,
+          distanceDeg: distance,
+          distanceKm: Number((distance * 111).toFixed(2)),
+        });
+      }
+    });
+  });
+
+  // Sort by distance
+  nearbySpecies.sort((a, b) => a.distanceKm - b.distanceKm);
+
+  res.json({
+    success: true,
+    queryLocation: { latitude: lat, longitude: lng },
+    radiusKm,
+    data: nearbySpecies.slice(0, 50),
+    count: nearbySpecies.length,
+  });
+});
+
+router.get('/species-locations/stats', (req: Request, res: Response) => {
+  if (!speciesLocationsData) {
+    return res.json({ success: false, error: 'Species locations data not available' });
+  }
+
+  const totalLocations = speciesLocationsData.species.reduce(
+    (sum: number, sp: any) => sum + sp.locations.length,
+    0
+  );
+
+  const topSpecies = speciesLocationsData.species.slice(0, 10);
+
+  res.json({
+    success: true,
+    data: {
+      totalSpecies: speciesLocationsData.totalSpecies,
+      totalLocations,
+      averageLocationsPerSpecies: Number((totalLocations / speciesLocationsData.totalSpecies).toFixed(2)),
+      topSpecies: topSpecies.map((sp: any) => ({
+        scientificName: sp.scientificName,
+        recordCount: sp.totalRecords,
+        locationCount: sp.locations.length,
+      })),
+      generatedAt: speciesLocationsData.generatedAt,
+    },
+  });
 });
 
 export default router;

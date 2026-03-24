@@ -68,4 +68,13 @@ export const otolithAPI = {
   getDetectedSpecies: () => api.get('/api/otolith/detected-species'),
 };
 
+export const speciesLocationsAPI = {
+  getAll: () => api.get('/api/species-locations'),
+  search: (query: string) => api.get('/api/species-locations/search', { params: { q: query } }),
+  getByName: (species: string) => api.get(`/api/species-locations/by-name/${species.replace(/ /g, '_')}`),
+  getNearby: (lat: number, lng: number, radiusKm?: number) =>
+    api.get(`/api/species-locations/nearby/${lat}/${lng}`, { params: { radius: radiusKm || 100 } }),
+  getStats: () => api.get('/api/species-locations/stats'),
+};
+
 export default api;
