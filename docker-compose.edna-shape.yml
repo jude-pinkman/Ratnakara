@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  # Frontend: Next.js
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://backend:3001
+    depends_on:
+      - backend
+    networks:
+      - ratnakara-network
+
+  # Backend: Express.js
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      ML_SERVICE_URL: http://ml-service:8000
+      PORT: 3001
+      NODE_ENV: production
+    depends_on:
+      - ml-service
+    networks:
+      - ratnakara-network
+
+  # ML Service: FastAPI (Deep eDNA Shape Analyzer)
+  ml-service:
+    build:
+      context: ./ml-service
+      dockerfile: Dockerfile.edna_shape
+    ports:
+      - "8000:8000"
+    environment:
+      CUDA_VISIBLE_DEVICES: '0'  # GPU device (remove if CPU-only)
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    networks:
+      - ratnakara-network
+    # GPU support (uncomment if available)
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+networks:
+  ratnakara-network:
+    driver: bridge
+
+# Run with:
+# docker-compose -f docker-compose.edna-shape.yml up --build
+#
+# Access:
+# Frontend:  http://localhost:3000/edna-shape-analyzer
+# API:       http://localhost:3001/api/edna-shape
+# ML API:    http://localhost:8000/docs (Swagger UI)

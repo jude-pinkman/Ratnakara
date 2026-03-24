@@ -11,24 +11,19 @@ interface StatsCardProps {
 
 const colorClasses = {
   blue: {
-    gradient: 'from-marine-500 to-marine-600',
-    shadow: 'hover:shadow-marine-500/25',
+    tone: 'bg-sky-50 text-sky-700',
   },
   green: {
-    gradient: 'from-emerald-500 to-emerald-600',
-    shadow: 'hover:shadow-emerald-500/25',
+    tone: 'bg-emerald-50 text-emerald-700',
   },
   purple: {
-    gradient: 'from-purple-500 to-purple-600',
-    shadow: 'hover:shadow-purple-500/25',
+    tone: 'bg-fuchsia-50 text-fuchsia-700',
   },
   orange: {
-    gradient: 'from-orange-500 to-orange-600',
-    shadow: 'hover:shadow-orange-500/25',
+    tone: 'bg-amber-50 text-amber-700',
   },
   teal: {
-    gradient: 'from-teal-500 to-teal-600',
-    shadow: 'hover:shadow-teal-500/25',
+    tone: 'bg-teal-50 text-teal-700',
   },
 };
 
@@ -36,27 +31,25 @@ export default function StatsCard({ title, value, icon: Icon, color, subtitle, t
   const colors = colorClasses[color];
 
   return (
-    <div
-      className={`bg-gradient-to-br ${colors.gradient} text-white rounded-xl p-6 shadow-lg transition-all duration-300 hover:shadow-xl ${colors.shadow} hover:-translate-y-1`}
-    >
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-slate-300">
       <div className="flex items-start justify-between mb-4">
         <div>
-          <h3 className="text-sm font-medium opacity-90">{title}</h3>
+          <h3 className="text-sm font-medium text-slate-700">{title}</h3>
         </div>
-        <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
+        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${colors.tone}`}>
           <Icon className="w-5 h-5" />
         </div>
       </div>
-      <p className="text-3xl font-bold mb-1">{value}</p>
+      <p className="text-3xl font-semibold text-slate-900 mb-1">{value}</p>
       {(subtitle || trend) && (
         <div className="flex items-center gap-2 mt-2">
           {trend && (
-            <span className="text-xs px-2 py-0.5 rounded-full bg-white/20 font-medium">
+            <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-medium">
               {trend}
             </span>
           )}
           {subtitle && (
-            <span className="text-xs opacity-80">{subtitle}</span>
+            <span className="text-xs text-slate-500">{subtitle}</span>
           )}
         </div>
       )}

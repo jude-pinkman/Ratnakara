@@ -9,27 +9,26 @@ import {
   Dna,
   TreeDeciduous,
   LayoutDashboard,
-  BarChart3,
   GitBranch,
-  BookOpen,
   FileCode2,
   Menu,
   X,
-  ChevronRight,
   Compass,
   Map,
   TrendingUp,
-  Brain,
+  ChevronRight,
+  Globe2,
 } from 'lucide-react';
 
 const navItems = [
   { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
   { name: 'Explorer', path: '/explorer', icon: Map },
-  { name: 'Ocean Data', path: '/ocean', icon: Waves },
+  { name: 'Ocean', path: '/ocean', icon: Waves },
   { name: 'Fisheries', path: '/fisheries', icon: Fish },
-  { name: 'eDNA Analysis', path: '/edna', icon: Dna },
+  { name: 'eDNA', path: '/edna', icon: Dna },
   { name: 'Biodiversity', path: '/biodiversity', icon: TreeDeciduous },
   { name: 'Forecast', path: '/forecast', icon: TrendingUp },
+  { name: 'Digital Twin', path: '/digital-twin', icon: Globe2 },
   { name: 'Correlations', path: '/correlations', icon: GitBranch },
   { name: 'API Docs', path: '/api-docs', icon: FileCode2 },
 ];
@@ -41,46 +40,50 @@ export default function Navigation() {
 
   if (isHome) {
     return (
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-transparent">
-        <div className="container mx-auto px-6">
-          <div className="flex items-center justify-between h-20">
-            <Link href="/" className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center">
-                <Waves className="w-6 h-6 text-white" />
+      <header className="fixed top-0 left-0 right-0 z-50 border-b border-white/30 bg-[#f5f6f4]/80 backdrop-blur-md">
+        <div className="mx-auto max-w-7xl px-5 md:px-8">
+          <div className="flex h-16 items-center justify-between">
+            <Link href="/" className="flex items-center gap-2.5">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-900 text-white shadow-sm">
+                <Waves className="h-5 w-5" />
               </div>
-              <span className="text-xl font-bold text-white">Marine Data Platform</span>
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.18em] text-teal-800/80">Marine Intelligence</p>
+                <p className="text-sm font-semibold text-slate-900">Data Platform</p>
+              </div>
             </Link>
 
-            <div className="hidden lg:flex items-center gap-2">
-              {navItems.slice(0, 6).map((item) => (
+            <div className="hidden items-center gap-1 lg:flex">
+              {navItems.slice(0, 5).map((item) => (
                 <Link
                   key={item.path}
                   href={item.path}
-                  className="px-4 py-2 rounded-lg text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-all duration-200"
+                  className="rounded-xl px-3.5 py-2 text-sm text-slate-700 transition-colors hover:bg-white hover:text-slate-900"
                 >
                   {item.name}
                 </Link>
               ))}
               <Link
                 href="/dashboard"
-                className="ml-4 px-6 py-2.5 rounded-lg text-sm font-semibold bg-white text-marine-700 hover:bg-white/90 transition-all duration-200 shadow-lg"
+                className="ml-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
               >
-                Get Started
+                Open Dashboard
               </Link>
             </div>
 
             <button
-              className="lg:hidden p-2 rounded-lg bg-white/10 text-white"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="rounded-xl border border-slate-300 bg-white p-2 text-slate-800 lg:hidden"
+              onClick={() => setMobileMenuOpen((prev) => !prev)}
+              aria-label="Toggle menu"
             >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
           </div>
         </div>
 
         {mobileMenuOpen && (
-          <div className="lg:hidden bg-navy-900/95 backdrop-blur-lg">
-            <div className="px-4 py-4 space-y-2">
+          <nav className="border-t border-slate-200 bg-[#f5f6f4] px-4 py-3 lg:hidden">
+            <div className="space-y-1">
               {navItems.map((item) => {
                 const Icon = item.icon;
                 return (
@@ -88,121 +91,10 @@ export default function Navigation() {
                     key={item.path}
                     href={item.path}
                     onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition-all"
+                    className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm text-slate-800 hover:bg-white"
                   >
-                    <Icon className="w-5 h-5" />
+                    <Icon className="h-4 w-4" />
                     {item.name}
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
-        )}
-      </nav>
-    );
-  }
-
-  return (
-    <>
-      {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex sidebar">
-        <div className="flex flex-col h-full w-full">
-          {/* Logo */}
-          <div className="p-6 border-b border-navy-700">
-            <Link href="/" className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-marine-500 to-teal-500 flex items-center justify-center shadow-glow">
-                <Waves className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <span className="text-lg font-bold text-white">Marine Data</span>
-                <p className="text-xs text-gray-400">Analytics Platform</p>
-              </div>
-            </Link>
-          </div>
-
-          {/* Navigation Links */}
-          <nav className="flex-1 py-6 overflow-y-auto dark-scroll">
-            <div className="px-4 mb-2">
-              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                Main Menu
-              </span>
-            </div>
-            <div className="space-y-1 px-2">
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = pathname === item.path;
-                return (
-                  <Link
-                    key={item.path}
-                    href={item.path}
-                    className={`sidebar-link ${isActive ? 'active' : ''}`}
-                  >
-                    <Icon className="w-5 h-5" />
-                    <span className="flex-1">{item.name}</span>
-                    {isActive && <ChevronRight className="w-4 h-4" />}
-                  </Link>
-                );
-              })}
-            </div>
-          </nav>
-
-          {/* Bottom Section */}
-          <div className="p-4 border-t border-navy-700">
-            <div className="bg-gradient-to-br from-marine-600 to-teal-600 rounded-xl p-4">
-              <div className="flex items-center gap-3 mb-3">
-                <Compass className="w-8 h-8 text-white" />
-                <div>
-                  <p className="text-sm font-semibold text-white">Explore Data</p>
-                  <p className="text-xs text-white/70">AI-Powered Insights</p>
-                </div>
-              </div>
-              <Link
-                href="/dashboard"
-                className="block text-center py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium text-white transition-all"
-              >
-                View Analytics
-              </Link>
-            </div>
-          </div>
-        </div>
-      </aside>
-
-      {/* Mobile Header */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-navy-900 border-b border-navy-700">
-        <div className="flex items-center justify-between px-4 h-16">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-marine-500 to-teal-500 flex items-center justify-center">
-              <Waves className="w-5 h-5 text-white" />
-            </div>
-            <span className="font-bold text-white">Marine Data</span>
-          </Link>
-          <button
-            className="p-2 rounded-lg bg-navy-800 text-white"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
-            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
-        </div>
-
-        {mobileMenuOpen && (
-          <nav className="bg-navy-800 border-t border-navy-700 max-h-[70vh] overflow-y-auto">
-            <div className="p-2 space-y-1">
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = pathname === item.path;
-                return (
-                  <Link
-                    key={item.path}
-                    href={item.path}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-                      isActive
-                        ? 'bg-marine-600 text-white'
-                        : 'text-gray-300 hover:text-white hover:bg-navy-700'
-                    }`}
-                  >
-                    <Icon className="w-5 h-5" />
-                    <span>{item.name}</span>
                   </Link>
                 );
               })}
@@ -210,9 +102,107 @@ export default function Navigation() {
           </nav>
         )}
       </header>
+    );
+  }
 
-      {/* Mobile spacer */}
-      <div className="lg:hidden h-16" />
+  return (
+    <>
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-72 border-r border-slate-200 bg-[#f8f9f7] lg:flex">
+        <div className="flex h-full w-full flex-col p-4">
+          <Link href="/" className="mb-4 flex items-center gap-3 rounded-2xl bg-white p-3 shadow-sm">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-white">
+              <Waves className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.18em] text-teal-800">Marine Intelligence</p>
+              <p className="text-sm font-semibold text-slate-900">Data Platform</p>
+            </div>
+          </Link>
+
+          <div className="mb-3 px-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Navigation</div>
+          <nav className="space-y-1 overflow-y-auto pr-1">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = pathname === item.path;
+              return (
+                <Link
+                  key={item.path}
+                  href={item.path}
+                  className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition ${
+                    isActive
+                      ? 'bg-slate-900 text-white shadow-sm'
+                      : 'text-slate-700 hover:bg-white hover:text-slate-900'
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  <span className="flex-1">{item.name}</span>
+                  {isActive && <ChevronRight className="h-4 w-4" />}
+                </Link>
+              );
+            })}
+          </nav>
+
+          <div className="mt-auto rounded-2xl border border-slate-200 bg-white p-4">
+            <div className="mb-3 flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-50 text-teal-700">
+                <Compass className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-slate-900">Student Tip</p>
+                <p className="text-xs text-slate-500">Begin with the dashboard story</p>
+              </div>
+            </div>
+            <Link
+              href="/dashboard"
+              className="block rounded-xl bg-slate-900 px-3 py-2 text-center text-sm font-medium text-white transition hover:bg-slate-800"
+            >
+              Open Dashboard First
+            </Link>
+          </div>
+        </div>
+      </aside>
+
+      <header className="fixed left-0 right-0 top-0 z-40 border-b border-slate-200 bg-[#f8f9f7] lg:hidden">
+        <div className="flex h-14 items-center justify-between px-4">
+          <Link href="/" className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-900 text-white">
+              <Waves className="h-4 w-4" />
+            </div>
+            <span className="text-sm font-semibold text-slate-900">Marine Data</span>
+          </Link>
+          <button
+            className="rounded-lg border border-slate-300 bg-white p-2 text-slate-800"
+            onClick={() => setMobileMenuOpen((prev) => !prev)}
+            aria-label="Toggle menu"
+          >
+            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+        </div>
+
+        {mobileMenuOpen && (
+          <nav className="max-h-[68vh] overflow-y-auto border-t border-slate-200 bg-[#f8f9f7] p-2">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = pathname === item.path;
+              return (
+                <Link
+                  key={item.path}
+                  href={item.path}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm ${
+                    isActive ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-white'
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  {item.name}
+                </Link>
+              );
+            })}
+          </nav>
+        )}
+      </header>
+
+      <div className="h-14 lg:hidden" />
     </>
   );
 }

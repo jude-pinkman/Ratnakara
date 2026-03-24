@@ -1,8 +1,16 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  --bg: #f5f6f4;
+  --bg-elevated: #fcfcfb;
+  --text: #1b2523;
+  --muted: #5e6b66;
+  --line: #d8dfdb;
+  --accent: #0f766e;
+  --accent-soft: #dff4ef;
+}
 
 @layer base {
   * {
@@ -19,15 +27,60 @@
   }
 
   body {
-    @apply text-gray-900 font-sans antialiased overflow-x-hidden;
+    @apply antialiased overflow-x-hidden;
+    font-family: var(--font-manrope), 'Segoe UI', sans-serif;
+    color: var(--text);
+    background:
+      radial-gradient(90rem 40rem at -10% -20%, #edf5f2 0%, rgba(237, 245, 242, 0) 70%),
+      radial-gradient(70rem 28rem at 110% 10%, #eef5fb 0%, rgba(238, 245, 251, 0) 72%),
+      var(--bg);
     margin: 0;
     padding: 0;
     min-height: 100vh;
     width: 100%;
   }
+
+  h1, h2, h3 {
+    font-family: var(--font-fraunces), Georgia, serif;
+    letter-spacing: -0.02em;
+  }
+
+  a {
+    color: inherit;
+  }
 }
 
 @layer components {
+  .surface {
+    background: rgba(252, 252, 251, 0.92);
+    border: 1px solid var(--line);
+    box-shadow: 0 10px 30px rgba(20, 30, 28, 0.05);
+    border-radius: 18px;
+  }
+
+  .surface-soft {
+    background: rgba(252, 252, 251, 0.65);
+    border: 1px solid rgba(216, 223, 219, 0.75);
+    border-radius: 16px;
+  }
+
+  .eyebrow {
+    @apply uppercase tracking-[0.2em] text-xs font-semibold;
+    color: #507167;
+  }
+
+  .muted {
+    color: var(--muted);
+  }
+
+  .reveal-in {
+    animation: revealIn 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .reveal-in-delay {
+    animation: revealIn 950ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
   /* Card Styles */
   .card {
     @apply bg-white rounded-xl shadow-md p-6 border border-gray-100 transition-all duration-300;
@@ -365,6 +418,18 @@
 
   .dark-scroll::-webkit-scrollbar-thumb {
     @apply bg-navy-600 hover:bg-navy-500;
+  }
+}
+
+@keyframes revealIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 

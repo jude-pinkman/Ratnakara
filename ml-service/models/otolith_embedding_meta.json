@@ -1,0 +1,10 @@
+{
+  "num_samples": 37,
+  "num_unique_species": 37,
+  "embedding_dim": 1280,
+  "image_size": [
+    224,
+    224
+  ],
+  "backbone": "MobileNetV2"
+}

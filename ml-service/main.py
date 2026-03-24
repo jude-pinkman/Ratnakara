@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
@@ -7,10 +7,12 @@ import json
 import os
 import pickle
 from datetime import datetime, timedelta
+from pathlib import Path
 
 from models.lstm_model import LSTMPredictor
 from models.random_forest import RandomForestPredictor
 from models.regression import RegressionPredictor
+from services.otolith_classifier import OtolithClassifier
 
 app = FastAPI(
     title="Ratnakara Marine Data ML Service",
@@ -28,11 +30,19 @@ app.add_middleware(
 
 # Model directory
 MODEL_DIR = os.path.join(os.path.dirname(__file__), 'models', 'saved')
+OTOLITH_MODEL_PATH = os.path.join(os.path.dirname(__file__), 'models', 'otolith_model.h5')
+OTOLITH_LABELS_PATH = os.path.join(os.path.dirname(__file__), 'models', 'otolith_labels.json')
+OTOLITH_EMBEDDING_INDEX_PATH = os.path.join(os.path.dirname(__file__), 'models', 'otolith_embedding_index.npz')
 
 # Initialize predictors
 lstm_predictor = LSTMPredictor()
 rf_predictor = RandomForestPredictor()
 regression_predictor = RegressionPredictor()
+otolith_classifier = OtolithClassifier(
+    model_path=Path(OTOLITH_MODEL_PATH).resolve(),
+    labels_path=Path(OTOLITH_LABELS_PATH).resolve(),
+    embedding_index_path=Path(OTOLITH_EMBEDDING_INDEX_PATH).resolve(),
+)
 
 # Load trained models if available
 def load_trained_models():
@@ -163,6 +173,24 @@ async def predict_regression(request: RegressionRequest):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/predict/otolith")
+async def predict_otolith(image: UploadFile = File(...)):
+    if image.content_type not in {"image/jpeg", "image/jpg", "image/png", "image/webp"}:
+        raise HTTPException(status_code=400, detail="Unsupported image format")
+
+    try:
+        image_bytes = await image.read()
+        result = otolith_classifier.predict(image_bytes)
+        return {
+            "species": result["species"],
+            "confidence": result["confidence"],
+        }
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Otolith prediction failed: {e}")
 
 @app.post("/chatbot")
 async def chatbot(request: ChatbotRequest):

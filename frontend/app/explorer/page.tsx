@@ -32,6 +32,9 @@ interface MapMarker {
   lat: number;
   lng: number;
   type: 'ocean' | 'fisheries' | 'edna' | 'mixed';
+  rawLat?: number;
+  rawLng?: number;
+  visualOnly?: boolean;
   data?: any;
 }
 
@@ -41,12 +44,26 @@ interface LocationData {
     ocean: { count: number; avgTemp: number | null; avgSalinity: number | null; avgOxygen: number | null };
     fisheries: { count: number; uniqueSpecies: number; totalAbundance: number; totalBiomass: number };
     edna: { count: number; detectedSpecies: number; avgConcentration: number | null };
+    otolith: { count: number; detectedSpecies: number };
   };
-  speciesSummary: Array<{ species: string; sources: string[]; totalAbundance: number; avgConcentration: number }>;
+  speciesSummary: Array<{
+    species: string;
+    sources: string[];
+    totalAbundance: number;
+    avgConcentration: number;
+    detections?: number;
+    taxonomy?: {
+      family?: string;
+      genus?: string;
+      order?: string;
+      class?: string;
+    };
+  }>;
   recentData: {
     ocean: any[];
     fisheries: any[];
     edna: any[];
+    otolith: any[];
   };
 }
 
@@ -88,6 +105,21 @@ const HEATMAP_PARAMS = [
 
 const PIE_COLORS = ['#06b6d4', '#10b981', '#8b5cf6', '#f59e0b', '#ef4444', '#ec4899', '#6366f1', '#14b8a6'];
 
+const INDIA_MARINE_ZONES = [
+  { minLat: 6.0, maxLat: 24.0, minLng: 66.0, maxLng: 77.0 },
+  { minLat: 6.0, maxLat: 24.0, minLng: 80.0, maxLng: 97.0 },
+  { minLat: 5.0, maxLat: 10.5, minLng: 76.0, maxLng: 86.0 },
+];
+
+const isWithinIndiaMarineZone = (lat: number, lng: number): boolean => {
+  return INDIA_MARINE_ZONES.some((zone) =>
+    lat >= zone.minLat &&
+    lat <= zone.maxLat &&
+    lng >= zone.minLng &&
+    lng <= zone.maxLng,
+  );
+};
+
 export default function ExplorerPage() {
   const [markers, setMarkers] = useState<MapMarker[]>([]);
   const [heatmapData, setHeatmapData] = useState<any[]>([]);
@@ -102,13 +134,64 @@ export default function ExplorerPage() {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [zoom, setZoom] = useState(5);
+  const [zoom, setZoom] = useState(6);
+
+  const getMarkerOffset = (type: MapMarker['type'], gridSize: number): { lat: number; lng: number } => {
+    if (selectedType !== 'all') {
+      return { lat: 0, lng: 0 };
+    }
+
+    const offset = Math.min(0.12, Math.max(0.015, gridSize * 0.12));
+    if (type === 'ocean') return { lat: offset, lng: -offset };
+    if (type === 'fisheries') return { lat: -offset, lng: offset };
+    if (type === 'edna') return { lat: offset, lng: offset };
+    return { lat: 0, lng: 0 };
+  };
 
   const getTypeTotal = useCallback((targetType: 'ocean' | 'fisheries' | 'edna') => {
     return markers
-      .filter((m) => m.type === targetType)
+      .filter((m) => m.type === targetType && !m.visualOnly)
       .reduce((sum, m) => sum + (Number(m.data?.count) || 0), 0);
   }, [markers]);
+
+  const createSatelliteMarkers = (baseMarker: MapMarker, gridSize: number): MapMarker[] => {
+    const baseCount = Number(baseMarker.data?.count || 0);
+    if (baseCount < 250) {
+      return [];
+    }
+
+    const satelliteCount = Math.min(10, Math.max(3, Math.floor(Math.log10(baseCount) * 3)));
+    const ringRadius = Math.min(0.28, Math.max(0.05, gridSize * 0.5));
+    const satellites: MapMarker[] = [];
+
+    for (let i = 0; i < satelliteCount; i += 1) {
+      const angle = (Math.PI * 2 * i) / satelliteCount;
+      const latOffset = ringRadius * Math.sin(angle);
+      const lngOffset = ringRadius * Math.cos(angle);
+      const nextLat = baseMarker.lat + latOffset;
+      const nextLng = baseMarker.lng + lngOffset;
+
+      if (!isWithinIndiaMarineZone(nextLat, nextLng)) {
+        continue;
+      }
+
+      satellites.push({
+        lat: nextLat,
+        lng: nextLng,
+        rawLat: baseMarker.rawLat,
+        rawLng: baseMarker.rawLng,
+        type: baseMarker.type,
+        visualOnly: true,
+        data: {
+          ...baseMarker.data,
+          count: undefined,
+          spreadHint: true,
+        },
+      });
+    }
+
+    return satellites;
+  };
 
   // Fetch cluster data based on type and zoom
   const fetchClusters = useCallback(async () => {
@@ -118,12 +201,29 @@ export default function ExplorerPage() {
       const result = await response.json();
 
       if (result.success) {
-        setMarkers(result.data.map((c: any) => ({
-          lat: c.lat,
-          lng: c.lng,
-          type: c.type,
-          data: { count: c.count, ...c.data }
-        })));
+        const gridSize = Number(result.gridSize) || 0.1;
+        const baseMarkers: MapMarker[] = result.data.map((c: any) => {
+            const rawLat = Number(c.lat);
+            const rawLng = Number(c.lng);
+            const markerType = c.type as MapMarker['type'];
+            const offset = getMarkerOffset(markerType, gridSize);
+            const shiftedLat = rawLat + offset.lat;
+            const shiftedLng = rawLng + offset.lng;
+            const useShifted = isWithinIndiaMarineZone(shiftedLat, shiftedLng);
+
+            return {
+              lat: useShifted ? shiftedLat : rawLat,
+              lng: useShifted ? shiftedLng : rawLng,
+              rawLat,
+              rawLng,
+              type: markerType,
+              visualOnly: false,
+              data: { count: Number(c.count) || 0, ...c.data },
+            };
+          });
+
+        const satellites = baseMarkers.flatMap((marker) => createSatelliteMarkers(marker, gridSize));
+        setMarkers([...baseMarkers, ...satellites]);
       }
     } catch (error) {
       console.error('Failed to fetch clusters:', error);
@@ -223,89 +323,33 @@ export default function ExplorerPage() {
     }
   };
 
-  // Mock data generators
-  const generateMockMarkers = (): MapMarker[] => {
-    const types: Array<'ocean' | 'fisheries' | 'edna'> = ['ocean', 'fisheries', 'edna'];
-    return Array.from({ length: 50 }, (_, i) => ({
-      lat: 8 + Math.random() * 15,
-      lng: 68 + Math.random() * 25,
-      type: types[i % 3],
-      data: {
-        count: Math.floor(Math.random() * 100) + 10,
-        avgTemp: 25 + Math.random() * 8,
-        avgOxygen: 4 + Math.random() * 4,
-        speciesCount: Math.floor(Math.random() * 30) + 5,
-        totalAbundance: Math.floor(Math.random() * 10000) + 1000
-      }
-    }));
-  };
-
-  const generateMockHeatmap = () => {
-    return Array.from({ length: 100 }, () => ({
-      lat: 8 + Math.random() * 15,
-      lng: 68 + Math.random() * 25,
-      value: 20 + Math.random() * 15,
-      intensity: Math.random()
-    }));
-  };
-
-  const generateMockLocationData = (lat: number, lng: number): LocationData => ({
-    location: { latitude: lat, longitude: lng, radiusKm: 25 },
-    stats: {
-      ocean: { count: 45, avgTemp: 27.5, avgSalinity: 34.2, avgOxygen: 6.1 },
-      fisheries: { count: 120, uniqueSpecies: 23, totalAbundance: 15000, totalBiomass: 2500 },
-      edna: { count: 35, detectedSpecies: 18, avgConcentration: 245.5 }
-    },
-    speciesSummary: [
-      { species: 'Sardinella longiceps', sources: ['fisheries', 'edna'], totalAbundance: 5000, avgConcentration: 320 },
-      { species: 'Rastrelliger kanagurta', sources: ['fisheries', 'edna'], totalAbundance: 3500, avgConcentration: 280 },
-      { species: 'Thunnus albacares', sources: ['fisheries'], totalAbundance: 1200, avgConcentration: 0 },
-      { species: 'Katsuwonus pelamis', sources: ['fisheries', 'edna'], totalAbundance: 2800, avgConcentration: 190 },
-      { species: 'Scomberomorus guttatus', sources: ['edna'], totalAbundance: 0, avgConcentration: 410 }
-    ],
-    recentData: { ocean: [], fisheries: [], edna: [] }
-  });
-
-  const generateMockInsights = (): InsightData[] => [
-    {
-      insight: 'Strong positive correlation (r=0.78) between temperature and fish abundance in Bay of Bengal.',
-      type: 'correlation',
-      confidence: 92,
-      relatedFactors: ['temperature', 'abundance', 'seasonal_variation'],
-      recommendation: 'Monitor temperature changes closely during fishing seasons.'
-    },
-    {
-      insight: 'Oxygen levels in Arabian Sea showing 8% decline over past 6 months. Potential hypoxia risk.',
-      type: 'anomaly',
-      confidence: 88,
-      relatedFactors: ['dissolved_oxygen', 'climate_change'],
-      recommendation: 'Implement continuous monitoring in affected areas.'
-    },
-    {
-      insight: 'eDNA detection rate for Sardinella longiceps increased 25% during monsoon season.',
-      type: 'trend',
-      confidence: 85,
-      relatedFactors: ['seasonality', 'breeding_cycles'],
-      recommendation: 'Focus sampling efforts during monsoon for better coverage.'
-    }
-  ];
-
-  const generateMockRegions = (): RegionData[] => [
-    { name: 'Bay of Bengal', center: { lat: 15, lng: 87 }, stats: { avgTemp: 28.5, avgSalinity: 33.8, avgOxygen: 5.8, observationCount: 1250, speciesCount: 145, totalAbundance: 125000 } },
-    { name: 'Arabian Sea', center: { lat: 15, lng: 70 }, stats: { avgTemp: 27.2, avgSalinity: 36.1, avgOxygen: 6.2, observationCount: 980, speciesCount: 128, totalAbundance: 98000 } },
-    { name: 'Andaman Sea', center: { lat: 10, lng: 95 }, stats: { avgTemp: 29.1, avgSalinity: 32.5, avgOxygen: 5.5, observationCount: 450, speciesCount: 156, totalAbundance: 45000 } }
-  ];
-
   // Effects
   useEffect(() => {
     fetchClusters();
+  }, [fetchClusters]);
+
+  useEffect(() => {
     fetchInsights();
     fetchRegions();
-  }, [fetchClusters, fetchInsights, fetchRegions]);
+  }, [fetchInsights, fetchRegions]);
 
   useEffect(() => {
     fetchHeatmap();
   }, [fetchHeatmap]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchClusters();
+      if (showHeatmap) {
+        fetchHeatmap();
+      }
+      if (selectedLocation) {
+        fetchLocationData(selectedLocation.lat, selectedLocation.lng, 25);
+      }
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [fetchClusters, fetchHeatmap, fetchLocationData, selectedLocation, showHeatmap]);
 
   // Handle map click
   const handleMapClick = (lat: number, lng: number) => {
@@ -317,8 +361,10 @@ export default function ExplorerPage() {
 
   // Handle marker click
   const handleMarkerClick = (marker: MapMarker) => {
-    setSelectedLocation({ lat: marker.lat, lng: marker.lng });
-    fetchLocationData(marker.lat, marker.lng, 150);
+    const lat = marker.rawLat ?? marker.lat;
+    const lng = marker.rawLng ?? marker.lng;
+    setSelectedLocation({ lat, lng });
+    fetchLocationData(lat, lng, 150);
     setSidebarOpen(true);
   };
 
@@ -462,6 +508,8 @@ export default function ExplorerPage() {
             heatmapData={showHeatmap ? heatmapData : []}
             onMapClick={handleMapClick}
             onMarkerClick={handleMarkerClick}
+            onZoomChange={setZoom}
+            zoom={zoom}
             showLegend={true}
             parameter={heatmapParam}
           />
@@ -536,7 +584,7 @@ export default function ExplorerPage() {
                     </div>
 
                     {/* Stats Cards */}
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-4 gap-2">
                       <div className="bg-cyan-50 rounded-lg p-3 text-center">
                         <Droplets className="w-4 h-4 text-cyan-600 mx-auto mb-1" />
                         <p className="text-lg font-bold text-cyan-900">{locationData.stats.ocean.count}</p>
@@ -551,6 +599,11 @@ export default function ExplorerPage() {
                         <Dna className="w-4 h-4 text-purple-600 mx-auto mb-1" />
                         <p className="text-lg font-bold text-purple-900">{locationData.stats.edna.detectedSpecies}</p>
                         <p className="text-xs text-purple-600">eDNA Species</p>
+                      </div>
+                      <div className="bg-amber-50 rounded-lg p-3 text-center">
+                        <Fish className="w-4 h-4 text-amber-600 mx-auto mb-1" />
+                        <p className="text-lg font-bold text-amber-900">{locationData.stats.otolith.detectedSpecies}</p>
+                        <p className="text-xs text-amber-600">Otolith Species</p>
                       </div>
                     </div>
 
@@ -618,10 +671,23 @@ export default function ExplorerPage() {
                                 {sp.sources.includes('edna') && (
                                   <span className="px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded text-xs">E</span>
                                 )}
+                                {sp.sources.includes('otolith') && (
+                                  <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded text-xs">O</span>
+                                )}
                               </div>
                             </div>
                           ))}
                         </div>
+                        {locationData.speciesSummary.some((sp) => sp.taxonomy?.family || sp.taxonomy?.genus) && (
+                          <div className="mt-3 space-y-1 rounded-md border border-gray-200 bg-white p-2">
+                            {locationData.speciesSummary.slice(0, 3).map((sp) => (
+                              <p key={sp.species} className="text-[11px] text-gray-600">
+                                <span className="font-medium italic text-gray-800">{sp.species}</span>
+                                {' '}• {sp.taxonomy?.family || 'NA'} / {sp.taxonomy?.genus || 'NA'}
+                              </p>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

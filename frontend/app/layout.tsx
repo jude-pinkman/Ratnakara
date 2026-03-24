@@ -1,6 +1,17 @@
 import type { Metadata } from 'next';
+import { Manrope, Fraunces } from 'next/font/google';
 import './globals.css';
 import Navigation from '@/components/Navigation';
+
+const manrope = Manrope({
+  subsets: ['latin'],
+  variable: '--font-manrope',
+});
+
+const fraunces = Fraunces({
+  subsets: ['latin'],
+  variable: '--font-fraunces',
+});
 
 export const metadata: Metadata = {
   title: 'Marine Data Platform',
@@ -14,13 +25,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-      </head>
-      <body>
+      <body className={`${manrope.variable} ${fraunces.variable}`}>
         <Navigation />
-        <main className="lg:ml-64 min-h-screen">
+        <main className="lg:ml-72 min-h-screen">
           {children}
         </main>
       </body>

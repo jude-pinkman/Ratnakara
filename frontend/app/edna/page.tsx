@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { ednaAPI, oceanAPI } from '@/lib/api';
 import { Bar, Scatter, Line, Doughnut } from 'react-chartjs-2';
 import {
@@ -16,10 +16,11 @@ import {
   Legend,
   Filler,
 } from 'chart.js';
-import { Dna, Filter, Download, Calendar, Beaker, Activity, Target, Waves, RefreshCw } from 'lucide-react';
+import { Dna, Filter, Download, Calendar, Beaker, Activity, Target, Waves, RefreshCw, Zap } from 'lucide-react';
 import { DateRangeFilter } from '@/components/DateRangeFilter';
 import { RefreshControl } from '@/components/RefreshControl';
 import { ExportButton } from '@/components/ExportButton';
+import DeepDNAShapePanel from '@/components/DeepDNAShapePanel';
 import { useDataRefresh, useDateRangeFilter } from '@/hooks/useDataRefresh';
 import { motion } from 'framer-motion';
 
@@ -51,6 +52,8 @@ export default function EdnaPage() {
   const [selectedYear, setSelectedYear] = useState<string>('all');
   const [comparisonMode, setComparisonMode] = useState(false);
   const [clickedSpecies, setClickedSpecies] = useState<string | null>(null);
+  const [showAdvancedAnalysis, setShowAdvancedAnalysis] = useState(false);
+  const [activeTab, setActiveTab] = useState<'analysis' | 'deep-shape'>('analysis');
 
   const dateRange = useDateRangeFilter(90);
 
@@ -208,6 +211,67 @@ export default function EdnaPage() {
     ],
   };
 
+  const analysisLenses = useMemo(() => {
+    const totalConfidenceCount = confidenceData.reduce(
+      (sum, item) => sum + Number(item?.count || 0),
+      0,
+    );
+    const highConfidenceCount = confidenceData.reduce((sum, item) => {
+      const label = String(item?.confidence_range || '').toLowerCase();
+      const isHigh = label.includes('high') || label.includes('0.8') || label.includes('80');
+      return sum + (isHigh ? Number(item?.count || 0) : 0);
+    }, 0);
+    const confidenceReliability =
+      totalConfidenceCount > 0 ? (highConfidenceCount / totalConfidenceCount) * 100 : null;
+
+    const depthPairs = filteredDepthData
+      .map((item) => ({
+        depth: Number(item?.depth),
+        concentration: Number(item?.avg_concentration),
+      }))
+      .filter((item) => Number.isFinite(item.depth) && Number.isFinite(item.concentration));
+
+    const depthSensitivity =
+      depthPairs.length > 1
+        ? (() => {
+            const n = depthPairs.length;
+            const sumX = depthPairs.reduce((acc, item) => acc + item.depth, 0);
+            const sumY = depthPairs.reduce((acc, item) => acc + item.concentration, 0);
+            const sumXY = depthPairs.reduce((acc, item) => acc + item.depth * item.concentration, 0);
+            const sumX2 = depthPairs.reduce((acc, item) => acc + item.depth * item.depth, 0);
+            const numerator = n * sumXY - sumX * sumY;
+            const denominator = n * sumX2 - sumX * sumX;
+            return denominator !== 0 ? numerator / denominator : null;
+          })()
+        : null;
+
+    const seasonalMeans = seasons.map((season) => {
+      const samples = filteredSeasonalData.filter((item) => item.season === season);
+      if (!samples.length) return 0;
+
+      const total = samples.reduce((sum, item) => sum + Number(item?.avg_concentration || 0), 0);
+      return total / samples.length;
+    });
+    const seasonalSpread = seasonalMeans.length
+      ? Math.max(...seasonalMeans) - Math.min(...seasonalMeans)
+      : null;
+
+    const concentrationSorted = [...filteredConcentration]
+      .map((item) => Number(item?.avg_concentration || 0))
+      .filter((value) => Number.isFinite(value))
+      .sort((a, b) => b - a);
+    const topFiveTotal = concentrationSorted.slice(0, 5).reduce((sum, value) => sum + value, 0);
+    const allTotal = concentrationSorted.reduce((sum, value) => sum + value, 0);
+    const richnessConcentration = allTotal > 0 ? (topFiveTotal / allTotal) * 100 : null;
+
+    return {
+      confidenceReliability,
+      depthSensitivity,
+      seasonalSpread,
+      richnessConcentration,
+    };
+  }, [confidenceData, filteredConcentration, filteredDepthData, filteredSeasonalData]);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -220,9 +284,9 @@ export default function EdnaPage() {
   }
 
   return (
-    <motion.div className="min-h-screen bg-gray-50" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+    <motion.div className="min-h-screen bg-[radial-gradient(circle_at_top,_#f3e8ff,_#f8fafc_35%,_#f8fafc_100%)]" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-white/90 backdrop-blur border-b border-purple-100">
         <div className="px-8 py-6">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
@@ -230,8 +294,8 @@ export default function EdnaPage() {
                 <Dna className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-navy-900">Environmental DNA Analysis</h1>
-                <p className="text-gray-500">Molecular biodiversity assessment and monitoring</p>
+                <h1 className="text-2xl font-bold text-navy-900">eDNA Evidence Lab</h1>
+                <p className="text-gray-500">Translate molecular signals into confidence-backed ecological insights</p>
               </div>
             </div>
             <RefreshControl
@@ -244,7 +308,54 @@ export default function EdnaPage() {
             />
           </div>
 
+          <div className="mb-4">
+            <button
+              type="button"
+              onClick={() => setShowAdvancedAnalysis((prev) => !prev)}
+              className={`rounded-lg border px-3 py-2 text-sm font-medium transition ${
+                showAdvancedAnalysis
+                  ? 'border-purple-300 bg-purple-50 text-purple-800'
+                  : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+              }`}
+            >
+              Advanced Analysis: {showAdvancedAnalysis ? 'On' : 'Off'}
+            </button>
+
+                    {/* Tab Controls for Analysis Mode */}
+                    <div className="mb-6 flex gap-2 border-b border-gray-200">
+                      <button
+                        onClick={() => setActiveTab('analysis')}
+                        className={`px-4 py-3 font-medium text-sm transition border-b-2 ${
+                          activeTab === 'analysis'
+                            ? 'border-purple-600 text-purple-600'
+                            : 'border-transparent text-gray-600 hover:text-gray-800'
+                        }`}
+                      >
+                        📊 Traditional Analysis
+                      </button>
+                      <button
+                        onClick={() => setActiveTab('deep-shape')}
+                        className={`px-4 py-3 font-medium text-sm transition border-b-2 flex items-center gap-2 ${
+                          activeTab === 'deep-shape'
+                            ? 'border-purple-600 text-purple-600'
+                            : 'border-transparent text-gray-600 hover:text-gray-800'
+                        }`}
+                      >
+                        <Zap className="w-4 h-4" />
+                        eDNA Analysis
+                      </button>
+                    </div>
+          </div>
+
+          {/* Content based on active tab */}
+          {activeTab === 'deep-shape' && (
+            <div className="mt-6">
+              <DeepDNAShapePanel />
+            </div>
+          )}
+
           {/* Filters */}
+          {activeTab === 'analysis' && (
           <div className="bg-gray-50 rounded-xl p-6">
             <div className="flex items-center gap-4 mb-4">
               <Filter className="w-5 h-5 text-gray-400" />
@@ -350,9 +461,11 @@ export default function EdnaPage() {
               </div>
             )}
           </div>
+          )}
         </div>
       </div>
 
+      {activeTab === 'analysis' && (
       <div className="p-8">
         {/* KPI Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -411,6 +524,72 @@ export default function EdnaPage() {
             <p className="text-3xl font-bold">{avgConfidence}%</p>
             <p className="text-sm opacity-70 mt-2">Average confidence</p>
           </motion.div>
+        </div>
+
+        {showAdvancedAnalysis ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+            <LensCard
+              title="Reliability Lens"
+              value={
+                analysisLenses.confidenceReliability !== null
+                  ? `${analysisLenses.confidenceReliability.toFixed(1)}%`
+                  : '-'
+              }
+              note="High-confidence detections share"
+              tone="bg-emerald-50 text-emerald-700"
+            />
+            <LensCard
+              title="Depth Lens"
+              value={
+                analysisLenses.depthSensitivity !== null
+                  ? `${analysisLenses.depthSensitivity.toFixed(3)}`
+                  : '-'
+              }
+              note="Slope of concentration vs depth relationship"
+              tone="bg-sky-50 text-sky-700"
+            />
+            <LensCard
+              title="Seasonality Lens"
+              value={
+                analysisLenses.seasonalSpread !== null
+                  ? `${analysisLenses.seasonalSpread.toFixed(2)}`
+                  : '-'
+              }
+              note="Concentration spread between seasons"
+              tone="bg-amber-50 text-amber-700"
+            />
+            <LensCard
+              title="Richness Lens"
+              value={
+                analysisLenses.richnessConcentration !== null
+                  ? `${analysisLenses.richnessConcentration.toFixed(1)}%`
+                  : '-'
+              }
+              note="Top-5 species concentration share"
+              tone="bg-violet-50 text-violet-700"
+            />
+          </div>
+        ) : null}
+
+        <div className="card mb-8 border-purple-100 bg-gradient-to-r from-purple-50 to-fuchsia-50">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-navy-900">How To Read This Page</h2>
+            <span className="text-xs font-semibold tracking-wider uppercase text-purple-700">eDNA Workflow</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="rounded-lg bg-white/90 p-4 border border-purple-100">
+              <p className="text-xs font-semibold tracking-wide uppercase text-purple-700">Detect</p>
+              <p className="text-sm text-gray-700 mt-1">Use concentration and richness lenses to identify dominant biological signals.</p>
+            </div>
+            <div className="rounded-lg bg-white/90 p-4 border border-purple-100">
+              <p className="text-xs font-semibold tracking-wide uppercase text-purple-700">Validate</p>
+              <p className="text-sm text-gray-700 mt-1">Check Reliability and confidence distribution before accepting biological conclusions.</p>
+            </div>
+            <div className="rounded-lg bg-white/90 p-4 border border-purple-100">
+              <p className="text-xs font-semibold tracking-wide uppercase text-purple-700">Explain</p>
+              <p className="text-sm text-gray-700 mt-1">Use Depth and Seasonality lenses to explain where and when signals intensify.</p>
+            </div>
+          </div>
         </div>
 
         {/* Charts Grid */}
@@ -696,6 +875,30 @@ export default function EdnaPage() {
           </div>
         </div>
       </div>
+      )}
     </motion.div>
+  );
+}
+
+function LensCard({
+  title,
+  value,
+  note,
+  tone,
+}: {
+  title: string;
+  value: string;
+  note: string;
+  tone: string;
+}) {
+  return (
+    <div className="card">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-sm font-semibold text-gray-700">{title}</p>
+        <div className={`px-2.5 py-1 rounded-md text-xs font-semibold ${tone}`}>Lens</div>
+      </div>
+      <p className="text-3xl font-semibold text-navy-900">{value}</p>
+      <p className="text-xs text-gray-500 mt-1">{note}</p>
+    </div>
   );
 }

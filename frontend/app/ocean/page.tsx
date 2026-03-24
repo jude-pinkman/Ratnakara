@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { oceanAPI } from '@/lib/api';
 const MapView = dynamic(() => import('@/components/MapView'), { ssr: false });
@@ -49,6 +49,7 @@ export default function OceanPage() {
   const [loading, setLoading] = useState(true);
   const [selectedRegion, setSelectedRegion] = useState<string>('all');
   const [activeParam, setActiveParam] = useState<string>('all');
+  const [showAdvancedAnalysis, setShowAdvancedAnalysis] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -95,6 +96,59 @@ export default function OceanPage() {
     acc[region] = (acc[region] || 0) + 1;
     return acc;
   }, {});
+
+  const analysisLenses = useMemo(() => {
+    const tempSeries = trends
+      .map((t) => parseFloat(t.avg_temperature))
+      .filter((value) => Number.isFinite(value));
+    const waveSeries = trends
+      .map((t) => parseFloat(t.avg_wave_height))
+      .filter((value) => Number.isFinite(value));
+
+    const mean = (values: number[]) =>
+      values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null;
+
+    const recentMean = mean(tempSeries.slice(-3));
+    const previousMean = mean(tempSeries.slice(-6, -3));
+    const tempMomentum =
+      recentMean !== null && previousMean !== null && previousMean !== 0
+        ? ((recentMean - previousMean) / previousMean) * 100
+        : null;
+
+    const waveMean = mean(waveSeries);
+    const waveVariance =
+      waveSeries.length > 1 && waveMean !== null
+        ? waveSeries.reduce((acc, value) => acc + (value - waveMean) ** 2, 0) / waveSeries.length
+        : null;
+    const waveVolatility =
+      waveVariance !== null && waveMean !== null && waveMean !== 0
+        ? (Math.sqrt(waveVariance) / waveMean) * 100
+        : null;
+
+    const coverage = kpis?.data_coverage;
+    const total = Number(kpis?.total_records || 0);
+    const coverageScore =
+      coverage && total > 0
+        ? Math.round(
+            (((Number(coverage.temperature_records || 0) / total) +
+              (Number(coverage.wave_height_records || 0) / total) +
+              (Number(coverage.wind_speed_records || 0) / total)) /
+              3) *
+              100,
+          )
+        : null;
+
+    const regionValues = Object.values(regionCounts) as number[];
+    const maxRegion = regionValues.length ? Math.max(...regionValues) : 0;
+    const regionConcentration = geoData.length > 0 ? Math.round((maxRegion / geoData.length) * 100) : null;
+
+    return {
+      tempMomentum,
+      waveVolatility,
+      coverageScore,
+      regionConcentration,
+    };
+  }, [geoData.length, kpis, regionCounts, trends]);
 
   const paramColors = {
     temperature: { border: 'rgba(239, 68, 68, 1)', bg: 'rgba(239, 68, 68, 0.1)' },
@@ -183,9 +237,9 @@ export default function OceanPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_#e0f2fe,_#f8fafc_35%,_#f8fafc_100%)]">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-white/90 backdrop-blur border-b border-sky-100">
         <div className="px-8 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -193,11 +247,22 @@ export default function OceanPage() {
                 <Waves className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-navy-900">Ocean Data Monitoring</h1>
-                <p className="text-gray-500">Real-time oceanographic parameter tracking</p>
+                <h1 className="text-2xl font-bold text-navy-900">Ocean Intelligence Room</h1>
+                <p className="text-gray-500">Track marine state, stability, and coverage confidence at a glance</p>
               </div>
             </div>
             <div className="flex items-center gap-4">
+              <button
+                type="button"
+                onClick={() => setShowAdvancedAnalysis((prev) => !prev)}
+                className={`rounded-lg border px-3 py-2 text-sm font-medium transition ${
+                  showAdvancedAnalysis
+                    ? 'border-sky-300 bg-sky-50 text-sky-800'
+                    : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                }`}
+              >
+                Advanced Analysis: {showAdvancedAnalysis ? 'On' : 'Off'}
+              </button>
               <select
                 value={selectedRegion}
                 onChange={(e) => setSelectedRegion(e.target.value)}
@@ -270,6 +335,68 @@ export default function OceanPage() {
             </div>
           </div>
         )}
+
+        {showAdvancedAnalysis ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+            <LensCard
+              title="Momentum Lens"
+              value={
+                analysisLenses.tempMomentum !== null
+                  ? `${analysisLenses.tempMomentum.toFixed(1)}%`
+                  : '-'
+              }
+              note="Temperature change versus previous window"
+              tone="bg-rose-50 text-rose-700"
+            />
+            <LensCard
+              title="Stability Lens"
+              value={
+                analysisLenses.waveVolatility !== null
+                  ? `${analysisLenses.waveVolatility.toFixed(1)}%`
+                  : '-'
+              }
+              note="Wave volatility coefficient"
+              tone="bg-sky-50 text-sky-700"
+            />
+            <LensCard
+              title="Data Quality Lens"
+              value={analysisLenses.coverageScore !== null ? `${analysisLenses.coverageScore}` : '-'}
+              note="Composite completeness across ocean variables"
+              tone="bg-emerald-50 text-emerald-700"
+            />
+            <LensCard
+              title="Spatial Lens"
+              value={
+                analysisLenses.regionConcentration !== null
+                  ? `${analysisLenses.regionConcentration}%`
+                  : '-'
+              }
+              note="Share of stations in the most concentrated region"
+              tone="bg-violet-50 text-violet-700"
+            />
+          </div>
+        ) : null}
+
+        <div className="card mb-8 border-sky-100 bg-gradient-to-r from-sky-50 to-cyan-50">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-navy-900">How To Read This Page</h2>
+            <span className="text-xs font-semibold tracking-wider uppercase text-sky-700">Ocean Brief</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="rounded-lg bg-white/90 p-4 border border-sky-100">
+              <p className="text-xs font-semibold tracking-wide uppercase text-sky-700">Signal</p>
+              <p className="text-sm text-gray-700 mt-1">Start with Momentum and Stability lenses to spot fast shifts and rough sea regimes.</p>
+            </div>
+            <div className="rounded-lg bg-white/90 p-4 border border-sky-100">
+              <p className="text-xs font-semibold tracking-wide uppercase text-sky-700">Trust</p>
+              <p className="text-sm text-gray-700 mt-1">Validate interpretation using Data Quality and station concentration before acting.</p>
+            </div>
+            <div className="rounded-lg bg-white/90 p-4 border border-sky-100">
+              <p className="text-xs font-semibold tracking-wide uppercase text-sky-700">Action</p>
+              <p className="text-sm text-gray-700 mt-1">Use map and regional charts to prioritize monitoring zones with highest operational exposure.</p>
+            </div>
+          </div>
+        </div>
 
         {/* Main Map Section */}
         <div className="card mb-6">
@@ -475,6 +602,29 @@ export default function OceanPage() {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function LensCard({
+  title,
+  value,
+  note,
+  tone,
+}: {
+  title: string;
+  value: string;
+  note: string;
+  tone: string;
+}) {
+  return (
+    <div className="card">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-sm font-semibold text-gray-700">{title}</p>
+        <div className={`px-2.5 py-1 rounded-md text-xs font-semibold ${tone}`}>Lens</div>
+      </div>
+      <p className="text-3xl font-semibold text-navy-900">{value}</p>
+      <p className="text-xs text-gray-500 mt-1">{note}</p>
     </div>
   );
 }

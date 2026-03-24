@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
   Dna, Map, Search, Download, AlertCircle, CheckCircle2, TrendingUp,
-  Filter, ExternalLink, RefreshCcw, Info, Beaker, Fish
+  Filter, ExternalLink, RefreshCcw, Info, Beaker, Fish, AlertTriangle
 } from 'lucide-react';
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
@@ -11,6 +11,7 @@ import {
 } from 'recharts';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
+import OtolithIdentification from '@/components/OtolithIdentification';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -64,6 +65,25 @@ interface KPIData {
   biodiversity: { totalSpecies: number; regions: number };
 }
 
+interface BiodiversityRiskRecord {
+  region: string;
+  score: number;
+  category: 'Stable' | 'Warning' | 'Critical';
+  components: {
+    ednaDiversityRisk: number;
+    speciesDeclineRisk: number;
+    temperatureAnomalyRisk: number;
+    fishingPressureRisk: number;
+  };
+  raw?: {
+    ednaDiversity?: number;
+    speciesDeclineRate?: number;
+    temperatureAnomaly?: number;
+    regionAvgTemp?: number;
+    fishingPressureRaw?: number;
+  };
+}
+
 const GENES = ['All', '16S', 'COX1', 'ITS', 'rbcL', 'matK'];
 
 export default function BiodiversityPage() {
@@ -71,6 +91,7 @@ export default function BiodiversityPage() {
   const [anomalies, setAnomalies] = useState<AnomalyAlert[]>([]);
   const [richness, setRichness] = useState<SpeciesRichness[]>([]);
   const [comparison, setComparison] = useState<ComparisonData[]>([]);
+  const [riskIndex, setRiskIndex] = useState<BiodiversityRiskRecord[]>([]);
   const [kpis, setKpis] = useState<KPIData | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -84,20 +105,22 @@ export default function BiodiversityPage() {
     setLoading(true);
     try {
       // Fetch all data in parallel
-      const [sequencesRes, anomaliesRes, richnessRes, comparisonRes, kpisRes] = await Promise.all([
+      const [sequencesRes, anomaliesRes, richnessRes, comparisonRes, kpisRes, riskIndexRes] = await Promise.all([
         fetch(`${API_BASE}/api/biodiversity/sequences?gene=${selectedGene}&minIdentity=${minIdentity}&species=${searchTerm}&limit=100`),
         fetch(`${API_BASE}/api/biodiversity/anomalies?limit=50`),
         fetch(`${API_BASE}/api/biodiversity/richness`),
         fetch(`${API_BASE}/api/biodiversity/comparison`),
-        fetch(`${API_BASE}/api/biodiversity/kpis`)
+        fetch(`${API_BASE}/api/biodiversity/kpis`),
+        fetch(`${API_BASE}/api/biodiversity/risk-index`),
       ]);
 
-      const [sequencesData, anomaliesData, richnessData, comparisonData, kpisData] = await Promise.all([
+      const [sequencesData, anomaliesData, richnessData, comparisonData, kpisData, riskIndexData] = await Promise.all([
         sequencesRes.json(),
         anomaliesRes.json(),
         richnessRes.json(),
         comparisonRes.json(),
-        kpisRes.json()
+        kpisRes.json(),
+        riskIndexRes.json(),
       ]);
 
       if (sequencesData.success) {
@@ -116,8 +139,11 @@ export default function BiodiversityPage() {
       if (kpisData.success) {
         setKpis(kpisData.data);
       }
+      if (riskIndexData.success) {
+        setRiskIndex(riskIndexData.data || []);
+      }
 
-      toast.success('Biodiversity data loaded from database');
+      toast.success('Biodiversity data loaded successfully');
     } catch (error) {
       console.error('Failed to fetch biodiversity data:', error);
       toast.error('Using fallback data - API unavailable');
@@ -158,10 +184,47 @@ export default function BiodiversityPage() {
       { parameter: 'Scomberomorus guttatus', edna_detections: 103, otolith_records: 35, agreement: 82 },
     ];
 
+    const mockRiskIndex: BiodiversityRiskRecord[] = [
+      {
+        region: 'Arabian Sea',
+        score: 36,
+        category: 'Stable',
+        components: {
+          ednaDiversityRisk: 25,
+          speciesDeclineRisk: 30,
+          temperatureAnomalyRisk: 42,
+          fishingPressureRisk: 50,
+        },
+      },
+      {
+        region: 'Bay of Bengal',
+        score: 58,
+        category: 'Warning',
+        components: {
+          ednaDiversityRisk: 48,
+          speciesDeclineRisk: 63,
+          temperatureAnomalyRisk: 66,
+          fishingPressureRisk: 57,
+        },
+      },
+      {
+        region: 'Southern Indian Ocean',
+        score: 74,
+        category: 'Critical',
+        components: {
+          ednaDiversityRisk: 72,
+          speciesDeclineRisk: 70,
+          temperatureAnomalyRisk: 79,
+          fishingPressureRisk: 73,
+        },
+      },
+    ];
+
     setSequences(mockSequences);
     setAnomalies(mockAnomalies);
     setRichness(mockRichness);
     setComparison(mockComparison);
+    setRiskIndex(mockRiskIndex);
     setKpis({
       sequences: { total: mockSequences.length, highQuality: 4, uniqueGenes: 3 },
       anomalies: { total: 3, critical: 2, unacknowledged: 2 },
@@ -258,6 +321,18 @@ export default function BiodiversityPage() {
   const criticalCount = kpis?.anomalies.critical || anomalies.filter(a => a.alert_level === 'critical').length;
   const unacknowledgedCount = kpis?.anomalies.unacknowledged || anomalies.filter(a => !a.acknowledged).length;
   const highQualitySequences = kpis?.sequences.highQuality || sequences.filter(s => (s.blast_identity_percent || 0) >= 97).length;
+  const averageRiskScore = riskIndex.length ? Math.round(riskIndex.reduce((sum, item) => sum + item.score, 0) / riskIndex.length) : 0;
+  const criticalRegions = riskIndex.filter((item) => item.category === 'Critical').length;
+
+  const getRiskTone = (category: BiodiversityRiskRecord['category']) => {
+    if (category === 'Critical') {
+      return { chip: 'bg-red-100 text-red-700', dot: 'bg-red-500', bar: '#ef4444', icon: '🔴' };
+    }
+    if (category === 'Warning') {
+      return { chip: 'bg-amber-100 text-amber-700', dot: 'bg-amber-500', bar: '#f59e0b', icon: '🟡' };
+    }
+    return { chip: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-500', bar: '#10b981', icon: '🟢' };
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -296,8 +371,12 @@ export default function BiodiversityPage() {
       </div>
 
       <div className="p-8">
+        <div className="mb-8">
+          <OtolithIdentification />
+        </div>
+
         {/* KPI Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-6 mb-8">
           <motion.div
             className="card bg-gradient-to-br from-cyan-50 to-cyan-100 border-cyan-200"
             initial={{ opacity: 0, y: 20 }}
@@ -371,7 +450,107 @@ export default function BiodiversityPage() {
               <TrendingUp className="w-8 h-8 text-purple-300" />
             </div>
           </motion.div>
+
+          <motion.div
+            className="card bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-amber-700 font-medium">Avg BRI Score</p>
+                <p className="text-3xl font-bold text-amber-900 mt-1">{averageRiskScore}</p>
+                <p className="text-xs text-amber-700 mt-1">{criticalRegions} critical region(s)</p>
+              </div>
+              <AlertTriangle className="w-8 h-8 text-amber-300" />
+            </div>
+          </motion.div>
         </div>
+
+        {/* Biodiversity Risk Index */}
+        <motion.div
+          className="card mb-8"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.08 }}
+        >
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="w-5 h-5 text-amber-600" />
+              <h2 className="text-lg font-semibold text-navy-900">Biodiversity Risk Index (BRI)</h2>
+            </div>
+            <span className="badge badge-yellow">Single Actionable Metric</span>
+          </div>
+
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-5">
+            <p className="text-sm text-amber-900">
+              BRI combines <strong>eDNA diversity</strong>, <strong>species decline rate</strong>, <strong>temperature anomalies</strong>, and <strong>fishing pressure</strong> into one score from 0 to 100.
+              Lower is better.
+            </p>
+          </div>
+
+          <div style={{ height: 280 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={riskIndex}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.05)" />
+                <XAxis dataKey="region" tick={{ fontSize: 12 }} />
+                <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} />
+                <Tooltip
+                  formatter={(value: number) => [`${value}`, 'BRI Score']}
+                  contentStyle={{
+                    backgroundColor: '#fff',
+                    border: '1px solid #ccc',
+                    borderRadius: '8px',
+                    padding: '12px',
+                  }}
+                />
+                <Bar dataKey="score" name="BRI Score" radius={[8, 8, 0, 0]}>
+                  {riskIndex.map((entry, index) => (
+                    <Cell key={`bri-cell-${index}`} fill={getRiskTone(entry.category).bar} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+            {riskIndex.map((item, idx) => {
+              const tone = getRiskTone(item.category);
+              return (
+                <div key={idx} className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-semibold text-gray-800">{item.region}</p>
+                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${tone.chip}`}>
+                      {tone.icon} {item.category}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-3xl font-bold text-gray-900">{item.score}</p>
+                  <p className="text-xs text-gray-500">BRI Score (0-100)</p>
+
+                  <div className="mt-4 space-y-2 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">eDNA Diversity Risk</span>
+                      <span className="font-semibold text-gray-800">{item.components.ednaDiversityRisk.toFixed(1)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Species Decline Risk</span>
+                      <span className="font-semibold text-gray-800">{item.components.speciesDeclineRisk.toFixed(1)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Temperature Anomaly Risk</span>
+                      <span className="font-semibold text-gray-800">{item.components.temperatureAnomalyRisk.toFixed(1)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Fishing Pressure Risk</span>
+                      <span className="font-semibold text-gray-800">{item.components.fishingPressureRisk.toFixed(1)}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </motion.div>
 
         {/* Species Richness by Region */}
         <motion.div

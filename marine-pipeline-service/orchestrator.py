@@ -18,7 +18,8 @@ from pipelines.edna_generator import EDNAMockGenerator
 from pipelines.taxonomy_fetcher import TaxonomyFetcher
 from pipelines.correlation_generator import CorrelationGenerator
 
-load_dotenv()
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+load_dotenv(os.path.join(BASE_DIR, '.env'))
 
 # Configure logging
 logging.basicConfig(
@@ -81,7 +82,7 @@ def ensure_schema_exists(database_url: str) -> bool:
                 f"?sslmode={config['sslmode']}"
             )
 
-            schema_path = os.path.join(os.path.dirname(__file__), 'schema.sql')
+            schema_path = os.path.join(BASE_DIR, 'schema.sql')
             if not os.path.exists(schema_path):
                 logger.error(f"Schema file not found: {schema_path}")
                 return False

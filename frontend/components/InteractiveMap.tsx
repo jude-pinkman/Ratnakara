@@ -8,6 +8,7 @@ interface MapMarker {
   lat: number;
   lng: number;
   type: 'ocean' | 'fisheries' | 'edna' | 'mixed';
+  visualOnly?: boolean;
   data?: any;
   popup?: string;
 }
@@ -26,6 +27,7 @@ interface InteractiveMapProps {
   zoom?: number;
   onMarkerClick?: (marker: MapMarker) => void;
   onMapClick?: (lat: number, lng: number) => void;
+  onZoomChange?: (zoom: number) => void;
   showLegend?: boolean;
   parameter?: string;
 }
@@ -124,9 +126,10 @@ export default function InteractiveMap({
   markers = [],
   heatmapData = [],
   center = [15.0, 80.0], // Indian Ocean default
-  zoom = 5,
+  zoom = 6,
   onMarkerClick,
   onMapClick,
+  onZoomChange,
   showLegend = true,
   parameter = 'temperature'
 }: InteractiveMapProps) {
@@ -184,6 +187,12 @@ export default function InteractiveMap({
       }
     });
 
+    mapRef.current.on('zoomend', () => {
+      if (onZoomChange && mapRef.current) {
+        onZoomChange(mapRef.current.getZoom());
+      }
+    });
+
     // Add Indian EEZ boundary (approximate)
     const eezBoundary = L.polygon([
       [23.5, 68], [22, 72], [20.5, 72], [18, 71],
@@ -225,7 +234,7 @@ export default function InteractiveMap({
 
     // Add new markers
     markers.forEach((marker) => {
-      const icon = marker.data?.count
+      const icon = marker.data?.count && !marker.visualOnly
         ? createClusterIcon(marker.data.count, marker.type)
         : createCustomIcon(marker.type);
 
