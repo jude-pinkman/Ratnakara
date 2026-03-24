@@ -23,6 +23,8 @@ export const fisheriesAPI = {
   getSpeciesDistribution: (params?: any) => api.get('/api/fisheries/species-distribution', { params }),
   getTemporal: (params?: any) => api.get('/api/fisheries/temporal', { params }),
   getGeospatial: (params?: any) => api.get('/api/fisheries/geospatial', { params }),
+  getHighestPopulationArea: (species: string) =>
+    api.get('/api/fisheries/highest-population-area', { params: { species } }),
 };
 
 export const ednaAPI = {
@@ -60,6 +62,10 @@ export const forecastAPI = {
 
 export const chatbotAPI = {
   ask: (question: string) => api.post('/api/chatbot', { question }),
+};
+
+export const otolithAPI = {
+  getDetectedSpecies: () => api.get('/api/otolith/detected-species'),
 };
 
 export default api;

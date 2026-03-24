@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { fisheriesAPI } from '@/lib/api';
 const MapView = dynamic(() => import('@/components/MapView'), { ssr: false });
@@ -33,6 +33,15 @@ ChartJS.register(
   Filler
 );
 
+interface HotspotArea {
+  region: string;
+  center_latitude: number;
+  center_longitude: number;
+  total_abundance: number;
+  observations: number;
+  matched_species: string[];
+}
+
 export default function FisheriesPage() {
   const [metrics, setMetrics] = useState<any>(null);
   const [speciesData, setSpeciesData] = useState<any[]>([]);
@@ -43,6 +52,11 @@ export default function FisheriesPage() {
   const [showTemperature, setShowTemperature] = useState(true);
   const [showSalinity, setShowSalinity] = useState(true);
   const [showPH, setShowPH] = useState(false);
+  const [showAdvancedAnalysis, setShowAdvancedAnalysis] = useState(false);
+  const [speciesQuery, setSpeciesQuery] = useState('');
+  const [searchingHotspot, setSearchingHotspot] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [hotspotArea, setHotspotArea] = useState<HotspotArea | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -80,6 +94,49 @@ export default function FisheriesPage() {
     'rgba(244, 63, 94, 0.8)',
     'rgba(34, 197, 94, 0.8)',
   ];
+
+  const mapGeoData = useMemo(() => {
+    if (selectedSpecies === 'all') {
+      return geoData;
+    }
+
+    const selected = selectedSpecies.toLowerCase();
+    return geoData.filter((item) => String(item.species || '').toLowerCase() === selected);
+  }, [geoData, selectedSpecies]);
+
+  const searchSpeciesHotspot = async () => {
+    const query = speciesQuery.trim();
+
+    if (!query) {
+      setHotspotArea(null);
+      setSearchError('Enter a species name first');
+      return;
+    }
+
+    try {
+      setSearchingHotspot(true);
+      setSearchError(null);
+
+      const res = await fisheriesAPI.getHighestPopulationArea(query);
+      const area = res?.data?.data ?? null;
+
+      if (!area) {
+        setHotspotArea(null);
+        setSearchError('No population records found for this species');
+        return;
+      }
+
+      setHotspotArea(area);
+      const resolvedSpecies = area.matched_species?.[0] || query;
+      setSelectedSpecies(resolvedSpecies);
+    } catch (error) {
+      console.error('Failed to fetch species hotspot:', error);
+      setHotspotArea(null);
+      setSearchError('Could not fetch highest population area');
+    } finally {
+      setSearchingHotspot(false);
+    }
+  };
 
   const doughnutData = {
     labels: speciesData.slice(0, 8).map((s) => s.common_name || s.species),
@@ -167,6 +224,54 @@ export default function FisheriesPage() {
     ],
   };
 
+  const analysisLenses = useMemo(() => {
+    const totalAbundance = Number(metrics?.total_abundance || 0);
+    const totalBiomass = Number(metrics?.total_biomass || 0);
+
+    const abundanceBySpecies = speciesData
+      .map((item) => Number(item?.total_abundance || 0))
+      .filter((value) => Number.isFinite(value));
+
+    const topAbundance = abundanceBySpecies.length ? Math.max(...abundanceBySpecies) : 0;
+    const dominanceRatio = totalAbundance > 0 ? (topAbundance / totalAbundance) * 100 : null;
+
+    const shannonLike = abundanceBySpecies.reduce((acc, abundance) => {
+      if (totalAbundance <= 0 || abundance <= 0) {
+        return acc;
+      }
+
+      const p = abundance / totalAbundance;
+      return acc - p * Math.log(p);
+    }, 0);
+    const maxEntropy = abundanceBySpecies.length > 1 ? Math.log(abundanceBySpecies.length) : 0;
+    const diversityPressure = maxEntropy > 0 ? (1 - shannonLike / maxEntropy) * 100 : null;
+
+    const biomassEfficiency = totalAbundance > 0 ? totalBiomass / totalAbundance : null;
+
+    const temps = temporalData
+      .map((t) => Number(t?.avg_temp))
+      .filter((value) => Number.isFinite(value));
+    const abundanceTrend = temporalData
+      .map((t) => Number(t?.total_abundance))
+      .filter((value) => Number.isFinite(value));
+
+    const tempRange = temps.length ? Math.max(...temps) - Math.min(...temps) : null;
+    const abundanceRange = abundanceTrend.length
+      ? Math.max(...abundanceTrend) - Math.min(...abundanceTrend)
+      : null;
+    const couplingScore =
+      tempRange !== null && abundanceRange !== null
+        ? Math.min(100, Math.round((abundanceRange / Math.max(tempRange, 1)) * 0.5))
+        : null;
+
+    return {
+      dominanceRatio,
+      diversityPressure,
+      biomassEfficiency,
+      couplingScore,
+    };
+  }, [metrics, speciesData, temporalData]);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -179,9 +284,9 @@ export default function FisheriesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_right,_#dcfce7,_#f8fafc_35%,_#f8fafc_100%)]">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-white/90 backdrop-blur border-b border-emerald-100">
         <div className="px-8 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -189,23 +294,22 @@ export default function FisheriesPage() {
                 <Fish className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-navy-900">Fisheries Analytics Dashboard</h1>
-                <p className="text-gray-500">Real-time monitoring and species distribution analysis</p>
+                <h1 className="text-2xl font-bold text-navy-900">Fisheries Strategy Desk</h1>
+                <p className="text-gray-500">Understand stock structure, pressure, and environmental coupling</p>
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <select
-                value={selectedSpecies}
-                onChange={(e) => setSelectedSpecies(e.target.value)}
-                className="select"
+              <button
+                type="button"
+                onClick={() => setShowAdvancedAnalysis((prev) => !prev)}
+                className={`rounded-lg border px-3 py-2 text-sm font-medium transition ${
+                  showAdvancedAnalysis
+                    ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
+                    : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                }`}
               >
-                <option value="all">All Species</option>
-                {speciesData.slice(0, 10).map((s, idx) => (
-                  <option key={idx} value={s.species}>
-                    {s.common_name || s.species}
-                  </option>
-                ))}
-              </select>
+                Advanced Analysis: {showAdvancedAnalysis ? 'On' : 'Off'}
+              </button>
               <button className="btn-secondary flex items-center gap-2">
                 <RefreshCw className="w-4 h-4" />
                 Refresh
@@ -253,6 +357,68 @@ export default function FisheriesPage() {
             </div>
           </div>
         )}
+
+        {showAdvancedAnalysis ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+            <LensCard
+              title="Dominance Lens"
+              value={
+                analysisLenses.dominanceRatio !== null
+                  ? `${analysisLenses.dominanceRatio.toFixed(1)}%`
+                  : '-'
+              }
+              note="Share held by the most dominant species"
+              tone="bg-amber-50 text-amber-700"
+            />
+            <LensCard
+              title="Diversity Lens"
+              value={
+                analysisLenses.diversityPressure !== null
+                  ? `${analysisLenses.diversityPressure.toFixed(1)}%`
+                  : '-'
+              }
+              note="Concentration pressure from normalized entropy"
+              tone="bg-emerald-50 text-emerald-700"
+            />
+            <LensCard
+              title="Efficiency Lens"
+              value={
+                analysisLenses.biomassEfficiency !== null
+                  ? `${analysisLenses.biomassEfficiency.toFixed(2)}`
+                  : '-'
+              }
+              note="Biomass generated per abundance unit"
+              tone="bg-sky-50 text-sky-700"
+            />
+            <LensCard
+              title="Coupling Lens"
+              value={analysisLenses.couplingScore !== null ? `${analysisLenses.couplingScore}` : '-'}
+              note="Temperature-abundance sensitivity index"
+              tone="bg-violet-50 text-violet-700"
+            />
+          </div>
+        ) : null}
+
+        <div className="card mb-8 border-emerald-100 bg-gradient-to-r from-emerald-50 to-lime-50">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-navy-900">How To Read This Page</h2>
+            <span className="text-xs font-semibold tracking-wider uppercase text-emerald-700">Fisheries Brief</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="rounded-lg bg-white/90 p-4 border border-emerald-100">
+              <p className="text-xs font-semibold tracking-wide uppercase text-emerald-700">Structure</p>
+              <p className="text-sm text-gray-700 mt-1">Dominance and Diversity lenses reveal whether stocks are balanced or concentrated.</p>
+            </div>
+            <div className="rounded-lg bg-white/90 p-4 border border-emerald-100">
+              <p className="text-xs font-semibold tracking-wide uppercase text-emerald-700">Performance</p>
+              <p className="text-sm text-gray-700 mt-1">Efficiency lens connects abundance with biomass to evaluate ecosystem productivity.</p>
+            </div>
+            <div className="rounded-lg bg-white/90 p-4 border border-emerald-100">
+              <p className="text-xs font-semibold tracking-wide uppercase text-emerald-700">Drivers</p>
+              <p className="text-sm text-gray-700 mt-1">Use Coupling lens and environmental chart to interpret possible climate sensitivity.</p>
+            </div>
+          </div>
+        </div>
 
         {/* Charts Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
@@ -478,10 +644,82 @@ export default function FisheriesPage() {
               <MapPin className="w-5 h-5 text-marine-600" />
               <h2 className="text-lg font-semibold text-navy-900">Fishing Zones Distribution</h2>
             </div>
-            <span className="text-sm text-gray-500">{geoData.length} monitoring stations</span>
+            <span className="text-sm text-gray-500">{mapGeoData.length} monitoring stations</span>
           </div>
+
+          <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <select
+                value={selectedSpecies}
+                onChange={(e) => setSelectedSpecies(e.target.value)}
+                className="select"
+              >
+                <option value="all">All Species</option>
+                {speciesData.map((s, idx) => (
+                  <option key={idx} value={s.species}>
+                    {s.common_name || s.species}
+                  </option>
+                ))}
+              </select>
+
+              <div className="flex items-center gap-2">
+                <input
+                  value={speciesQuery}
+                  onChange={(e) => setSpeciesQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      searchSpeciesHotspot();
+                    }
+                  }}
+                  className="input min-w-[260px]"
+                  placeholder="Search species for top population area"
+                  list="species-options"
+                />
+                <datalist id="species-options">
+                  {speciesData.map((s, idx) => (
+                    <option key={idx} value={s.species} />
+                  ))}
+                </datalist>
+                <button
+                  type="button"
+                  onClick={searchSpeciesHotspot}
+                  className="btn-secondary"
+                  disabled={searchingHotspot}
+                >
+                  {searchingHotspot ? 'Searching...' : 'Find Hotspot'}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {searchError ? (
+            <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              {searchError}
+            </div>
+          ) : null}
+
+          {hotspotArea ? (
+            <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+              <span className="font-semibold">Highest population area:</span> {hotspotArea.region} with{' '}
+              {Number(hotspotArea.total_abundance).toLocaleString()} abundance across {hotspotArea.observations} observations.
+            </div>
+          ) : null}
+
           <div className="h-[500px] rounded-xl overflow-hidden border border-gray-200">
-            <MapView data={geoData} type="fisheries" />
+            <MapView
+              data={mapGeoData}
+              type="fisheries"
+              highlightPoint={
+                hotspotArea
+                  ? {
+                      latitude: Number(hotspotArea.center_latitude),
+                      longitude: Number(hotspotArea.center_longitude),
+                      label: hotspotArea.region,
+                      description: `${Number(hotspotArea.total_abundance).toLocaleString()} abundance`,
+                    }
+                  : null
+              }
+            />
           </div>
         </div>
 
@@ -545,6 +783,29 @@ export default function FisheriesPage() {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function LensCard({
+  title,
+  value,
+  note,
+  tone,
+}: {
+  title: string;
+  value: string;
+  note: string;
+  tone: string;
+}) {
+  return (
+    <div className="card">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-sm font-semibold text-gray-700">{title}</p>
+        <div className={`px-2.5 py-1 rounded-md text-xs font-semibold ${tone}`}>Lens</div>
+      </div>
+      <p className="text-3xl font-semibold text-navy-900">{value}</p>
+      <p className="text-xs text-gray-500 mt-1">{note}</p>
     </div>
   );
 }

@@ -7,6 +7,12 @@ import { useEffect } from 'react';
 interface MapViewProps {
   data: any[];
   type: 'ocean' | 'fisheries' | 'edna';
+  highlightPoint?: {
+    latitude: number;
+    longitude: number;
+    label: string;
+    description?: string;
+  } | null;
 }
 
 // Component to fit map bounds to data
@@ -44,7 +50,7 @@ function FitBounds({ data }: { data: any[] }) {
   return null;
 }
 
-export default function MapView({ data, type }: MapViewProps) {
+export default function MapView({ data, type, highlightPoint = null }: MapViewProps) {
   // Calculate center from data, or use default
   const getCenter = (): [number, number] => {
     if (data && data.length > 0) {
@@ -197,6 +203,35 @@ export default function MapView({ data, type }: MapViewProps) {
             </Popup>
           </CircleMarker>
         ))}
+
+        {highlightPoint ? (
+          <CircleMarker
+            center={[highlightPoint.latitude, highlightPoint.longitude]}
+            radius={18}
+            fillColor="#f59e0b"
+            color="#78350f"
+            weight={3}
+            opacity={1}
+            fillOpacity={0.45}
+          >
+            <Tooltip direction="top" offset={[0, -10]} opacity={0.95}>
+              <span style={{ fontWeight: 600 }}>Top hotspot: {highlightPoint.label}</span>
+            </Tooltip>
+            <Popup>
+              <div style={{ minWidth: 200, fontFamily: 'Inter, sans-serif' }}>
+                <h3 style={{ fontWeight: 600, color: '#0f172a', marginBottom: 8 }}>
+                  {highlightPoint.label}
+                </h3>
+                <p style={{ color: '#475569', fontSize: 13, marginBottom: 8 }}>
+                  {highlightPoint.description || 'Highest population area for searched species'}
+                </p>
+                <p style={{ color: '#64748b', fontSize: 12 }}>
+                  {highlightPoint.latitude.toFixed(4)}°, {highlightPoint.longitude.toFixed(4)}°
+                </p>
+              </div>
+            </Popup>
+          </CircleMarker>
+        ) : null}
       </MapContainer>
     </div>
   );
