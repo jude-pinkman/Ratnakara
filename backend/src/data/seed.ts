@@ -46,8 +46,9 @@ export async function seedDatabase() {
       for (const location of oceanLocations) {
         try {
           await db.query(
-            'INSERT INTO ocean_data (location, latitude, longitude, recorded_at, temperature, salinity, ph, oxygen, depth, region, source) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)',
+            'INSERT INTO ocean_data (station_id, location, latitude, longitude, recorded_at, temperature, salinity, ph, oxygen, wave_height, wind_speed, depth, region, source) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)',
             [
+              location,
               location,
               8.5 + Math.random() * 0.5,
               75 + Math.random() * 2,
@@ -56,7 +57,9 @@ export async function seedDatabase() {
               34.5 + Math.random() * 1,
               8.2 + Math.random() * 0.2,
               5 + Math.random() * 2,
-              Math.floor(50 + Math.random() * 50),  // Must be integer
+              0.5 + Math.random() * 3.5,
+              3 + Math.random() * 12,
+              Math.floor(50 + Math.random() * 50),
               'Arabian Sea',
               'NOAA'
             ]

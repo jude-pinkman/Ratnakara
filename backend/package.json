@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/app.ts",
+    "dev": "PORT=3001 tsx watch src/app.ts",
     "build": "tsc",
-    "start": "node dist/app.js"
+    "start": "PORT=3001 node dist/app.js"
   },
   "dependencies": {
     "cors": "^2.8.5",

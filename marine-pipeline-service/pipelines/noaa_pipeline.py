@@ -21,10 +21,10 @@ class NOAAPipeline:
     """Fetches and processes real NOAA buoy data"""
 
     STATIONS = [
-        {"id": "41037", "lat": 27.5, "lon": -75.0, "name": "South of Bermuda"},
-        {"id": "41001", "lat": 34.7, "lon": -72.7, "name": "East of Cape Hatteras"},
-        {"id": "46050", "lat": 44.7, "lon": -124.5, "name": "Oregon Coast"},
-        {"id": "51003", "lat": 19.2, "lon": -160.6, "name": "Hawaii"},
+        {"id": "41037", "lat": 15.2, "lon": 69.0, "name": "Arabian Sea"},
+        {"id": "41001", "lat": 18.6, "lon": 87.8, "name": "Bay of Bengal"},
+        {"id": "46050", "lat": 11.4, "lon": 92.7, "name": "Andaman Sea"},
+        {"id": "51003", "lat": 9.8, "lon": 74.5, "name": "Laccadive Sea"},
     ]
 
     def __init__(self, database_url: str):
@@ -41,7 +41,7 @@ class NOAAPipeline:
 
             # Parse the text file (space-delimited)
             from io import StringIO
-            df = pd.read_csv(StringIO(response.text), delim_whitespace=True, skiprows=[1])
+            df = pd.read_csv(StringIO(response.text), sep=r'\s+', skiprows=[1])
 
             # Convert time columns to datetime
             df['recorded_at'] = pd.to_datetime(

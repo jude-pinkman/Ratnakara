@@ -58,7 +58,7 @@ router.get('/kpis', async (req: Request, res: Response) => {
         COUNT(CASE WHEN wave_height IS NOT NULL THEN 1 END) as records_with_wave,
         COUNT(CASE WHEN wind_speed IS NOT NULL THEN 1 END) as records_with_wind
       FROM ocean_data
-      WHERE recorded_at >= NOW() - INTERVAL '30 days'
+      WHERE recorded_at >= NOW() - INTERVAL '90 days'
     `;
 
     const result = await db.query(query);
@@ -119,10 +119,11 @@ router.get('/geospatial', async (req: Request, res: Response) => {
   try {
     const query = `
       SELECT
-        latitude, longitude, temperature, wave_height, wind_speed, recorded_at, station_id
+        latitude, longitude, temperature, salinity, ph, oxygen,
+        wave_height, wind_speed, recorded_at, station_id,
+        station_id AS station_name
       FROM ocean_data
-      WHERE recorded_at >= NOW() - INTERVAL '7 days'
-        AND latitude IS NOT NULL
+      WHERE latitude IS NOT NULL
         AND longitude IS NOT NULL
       ORDER BY recorded_at DESC
       LIMIT 500

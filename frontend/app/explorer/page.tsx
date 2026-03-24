@@ -104,6 +104,12 @@ export default function ExplorerPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [zoom, setZoom] = useState(5);
 
+  const getTypeTotal = useCallback((targetType: 'ocean' | 'fisheries' | 'edna') => {
+    return markers
+      .filter((m) => m.type === targetType)
+      .reduce((sum, m) => sum + (Number(m.data?.count) || 0), 0);
+  }, [markers]);
+
   // Fetch cluster data based on type and zoom
   const fetchClusters = useCallback(async () => {
     try {
@@ -472,15 +478,15 @@ export default function ExplorerPage() {
             <div className="text-xs font-semibold text-gray-700 mb-2">Quick Stats</div>
             <div className="grid grid-cols-3 gap-3 text-xs">
               <div className="text-center">
-                <p className="font-bold text-cyan-600">{markers.filter(m => m.type === 'ocean').length}</p>
+                <p className="font-bold text-cyan-600">{getTypeTotal('ocean').toLocaleString()}</p>
                 <p className="text-gray-500">Ocean</p>
               </div>
               <div className="text-center">
-                <p className="font-bold text-emerald-600">{markers.filter(m => m.type === 'fisheries').length}</p>
+                <p className="font-bold text-emerald-600">{getTypeTotal('fisheries').toLocaleString()}</p>
                 <p className="text-gray-500">Fish</p>
               </div>
               <div className="text-center">
-                <p className="font-bold text-purple-600">{markers.filter(m => m.type === 'edna').length}</p>
+                <p className="font-bold text-purple-600">{getTypeTotal('edna').toLocaleString()}</p>
                 <p className="text-gray-500">eDNA</p>
               </div>
             </div>

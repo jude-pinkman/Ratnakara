@@ -36,9 +36,11 @@ class Database {
 
     this.pool = new Pool({
       ...config,
-      max: 20,
+      max: 8,
+      min: 0,
       idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 2000,
+      connectionTimeoutMillis: 10000,
+      keepAlive: true,
     });
 
     this.pool.on('error', (err) => {
@@ -54,16 +56,33 @@ class Database {
   }
 
   async query(text: string, params?: any[]) {
-    const start = Date.now();
-    try {
-      const res = await this.pool.query(text, params);
-      const duration = Date.now() - start;
-      console.log('Executed query', { text, duration, rows: res.rowCount });
-      return res;
-    } catch (error) {
-      console.error('Database query error:', { text, error });
-      throw error;
+    const maxAttempts = 3;
+    let lastError: unknown;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      const start = Date.now();
+      try {
+        const res = await this.pool.query(text, params);
+        const duration = Date.now() - start;
+        console.log('Executed query', { text, duration, rows: res.rowCount });
+        return res;
+      } catch (error: any) {
+        lastError = error;
+        const code = error?.code;
+        const shouldRetry = code === 'ETIMEDOUT' || code === 'ECONNRESET' || code === 'EPIPE';
+
+        console.error('Database query error:', { text, attempt, error });
+
+        if (!shouldRetry || attempt === maxAttempts) {
+          throw error;
+        }
+
+        // Small linear backoff for transient Neon/network timeouts.
+        await new Promise((resolve) => setTimeout(resolve, attempt * 300));
+      }
     }
+
+    throw lastError;
   }
 
   async getClient(): Promise<PoolClient> {

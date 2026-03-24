@@ -237,14 +237,14 @@ def main():
     logger.info("Running initial pipeline...")
     orchestrator.run_full_pipeline()
 
-    # Schedule hourly runs
-    schedule.every(1).hours.do(orchestrator.run_hourly_pipeline)
+    # Schedule frequent runs
+    schedule.every(5).minutes.do(orchestrator.run_hourly_pipeline)
 
     # Schedule daily taxonomy updates
     schedule.every().day.at("02:00").do(orchestrator.run_daily_pipeline)
 
     logger.info("\nScheduler configured:")
-    logger.info("  - Hourly: NOAA → Fisheries → eDNA → Correlations")
+    logger.info("  - Every 5 minutes: NOAA → Fisheries → eDNA → Correlations")
     logger.info("  - Daily (02:00): Taxonomy updates")
     logger.info("\nScheduler started. Press Ctrl+C to stop.\n")
 

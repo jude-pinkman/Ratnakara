@@ -1,4 +1,4 @@
-# 🌊 Marine Data Platform - Quick Start
+d# 🌊 Marine Data Platform - Quick Start
 
 ## ⚡ 5-Minute Setup
 

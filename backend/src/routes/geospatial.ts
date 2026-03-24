@@ -47,15 +47,13 @@ router.get('/clusters', async (req: Request, res: Response) => {
     const zoomLevel = parseInt(zoom as string);
     const gridSize = Math.max(0.1, 5 / Math.pow(2, zoomLevel - 4));
 
-    const typeValue = type === 'all' ? 'mixed' : (type as string);
-
     let query = `
       SELECT
         ROUND((latitude / $1)::numeric, 4) * $1 as lat,
         ROUND((longitude / $1)::numeric, 4) * $1 as lng,
         COUNT(*) as count,
-        $2 as type,
-        ROUND(AVG(CASE WHEN data_type='ocean' THEN value ELSE NULL END)::numeric, 2) as data
+        data_type as type,
+        ROUND(AVG(value)::numeric, 2) as data
       FROM (
         SELECT latitude, longitude, 'ocean' as data_type, temperature as value FROM ocean_data WHERE latitude IS NOT NULL AND longitude IS NOT NULL
         UNION ALL
@@ -65,16 +63,20 @@ router.get('/clusters', async (req: Request, res: Response) => {
       ) combined
     `;
 
-    const params = [gridSize, typeValue];
+    const params: Array<number | string> = [gridSize];
+
+    query += ` WHERE latitude BETWEEN ${INDIAN_OCEAN_BOUNDS.minLat} AND ${INDIAN_OCEAN_BOUNDS.maxLat}
+      AND longitude BETWEEN ${INDIAN_OCEAN_BOUNDS.minLng} AND ${INDIAN_OCEAN_BOUNDS.maxLng}`;
 
     if (type !== 'all') {
-      query += ` WHERE data_type = $3`;
+      query += ` AND data_type = $2`;
       params.push(type as string);
     }
 
     query += `
-      GROUP BY ROUND((latitude / $1)::numeric, 4) * $1, ROUND((longitude / $1)::numeric, 4) * $1
+      GROUP BY ROUND((latitude / $1)::numeric, 4) * $1, ROUND((longitude / $1)::numeric, 4) * $1, data_type
       HAVING COUNT(*) > 0
+      ORDER BY count DESC
       LIMIT 500
     `;
 
@@ -158,6 +160,8 @@ router.get('/heatmap/:parameter', async (req: Request, res: Response) => {
         COUNT(*) as count
       FROM ${table}
       WHERE latitude IS NOT NULL AND longitude IS NOT NULL
+        AND latitude BETWEEN ${INDIAN_OCEAN_BOUNDS.minLat} AND ${INDIAN_OCEAN_BOUNDS.maxLat}
+        AND longitude BETWEEN ${INDIAN_OCEAN_BOUNDS.minLng} AND ${INDIAN_OCEAN_BOUNDS.maxLng}
         AND ${valueColumn} IS NOT NULL
       GROUP BY ROUND((latitude / $1)::numeric, 4) * $1, ROUND((longitude / $1)::numeric, 4) * $1
       ORDER BY value DESC
@@ -211,6 +215,8 @@ router.get('/regions', async (req: Request, res: Response) => {
         SELECT latitude, longitude, NULL as temperature, species FROM fisheries_data
       ) combined
       WHERE latitude IS NOT NULL AND longitude IS NOT NULL
+        AND latitude BETWEEN ${INDIAN_OCEAN_BOUNDS.minLat} AND ${INDIAN_OCEAN_BOUNDS.maxLat}
+        AND longitude BETWEEN ${INDIAN_OCEAN_BOUNDS.minLng} AND ${INDIAN_OCEAN_BOUNDS.maxLng}
       GROUP BY name
       HAVING COUNT(*) > 0
     `;
@@ -250,6 +256,8 @@ router.get('/search', async (req: Request, res: Response) => {
         ROUND(AVG(longitude)::numeric, 4) as lng
       FROM fisheries_data
       WHERE species ILIKE $1
+        AND latitude BETWEEN ${INDIAN_OCEAN_BOUNDS.minLat} AND ${INDIAN_OCEAN_BOUNDS.maxLat}
+        AND longitude BETWEEN ${INDIAN_OCEAN_BOUNDS.minLng} AND ${INDIAN_OCEAN_BOUNDS.maxLng}
       GROUP BY species
       UNION ALL
       SELECT DISTINCT species as name, 'species' as type,
@@ -257,6 +265,8 @@ router.get('/search', async (req: Request, res: Response) => {
         ROUND(AVG(longitude)::numeric, 4) as lng
       FROM edna_data
       WHERE species ILIKE $1
+        AND latitude BETWEEN ${INDIAN_OCEAN_BOUNDS.minLat} AND ${INDIAN_OCEAN_BOUNDS.maxLat}
+        AND longitude BETWEEN ${INDIAN_OCEAN_BOUNDS.minLng} AND ${INDIAN_OCEAN_BOUNDS.maxLng}
       GROUP BY species
       LIMIT 20
     `;

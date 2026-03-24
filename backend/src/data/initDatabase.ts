@@ -24,6 +24,7 @@ CREATE INDEX IF NOT EXISTS idx_taxonomy_species ON taxonomy(species);
 -- Ocean Data table
 CREATE TABLE IF NOT EXISTS ocean_data (
     id SERIAL PRIMARY KEY,
+    station_id VARCHAR(255),
     location VARCHAR(255),
     latitude DOUBLE PRECISION NOT NULL,
     longitude DOUBLE PRECISION NOT NULL,
@@ -32,6 +33,8 @@ CREATE TABLE IF NOT EXISTS ocean_data (
     salinity DOUBLE PRECISION,
     ph DOUBLE PRECISION,
     oxygen DOUBLE PRECISION,
+    wave_height DOUBLE PRECISION,
+    wind_speed DOUBLE PRECISION,
     depth DOUBLE PRECISION,
     region VARCHAR(100),
     source VARCHAR(100) DEFAULT 'NOAA',
