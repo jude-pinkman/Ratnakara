@@ -40,6 +40,12 @@ const modules = [
     icon: TreeDeciduous,
     description: 'Species groups and biodiversity structure in one place.',
   },
+  {
+    title: '🇮🇳 Species Locations',
+    href: '/species-locations',
+    icon: Globe2,
+    description: 'Indian marine species with real location data and search.',
+  },
 ];
 
 const analytics = [
@@ -60,6 +66,12 @@ const analytics = [
     href: '/digital-twin',
     icon: Globe2,
     description: 'Try what-if scenarios like warming, overfishing, and pollution.',
+  },
+  {
+    title: 'Dynamic Map',
+    href: '/dynamic-map',
+    icon: Radar,
+    description: 'Interactive map with live search, filtering, and hotspot detection.',
   },
   {
     title: 'Live Explorer',
@@ -123,7 +135,7 @@ export default function HomePage() {
                 Start from dashboard
               </Link>
             </div>
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {modules.map((item) => {
                 const Icon = item.icon;
                 return (

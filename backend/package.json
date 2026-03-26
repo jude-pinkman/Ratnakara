@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "cross-env PORT=3001 tsx watch src/app.ts",
+    "dev": "cross-env PORT=3002 tsx watch src/app.ts",
     "build": "tsc",
-    "start": "cross-env PORT=3001 node dist/app.js"
+    "start": "cross-env PORT=3002 node dist/app.js"
   },
   "dependencies": {
     "cors": "^2.8.5",

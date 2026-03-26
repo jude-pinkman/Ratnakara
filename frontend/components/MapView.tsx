@@ -6,7 +6,7 @@ import { useEffect } from 'react';
 
 interface MapViewProps {
   data: any[];
-  type: 'ocean' | 'fisheries' | 'edna';
+  type: 'ocean' | 'fisheries' | 'edna' | 'species';
   highlightPoint?: {
     latitude: number;
     longitude: number;
@@ -99,71 +99,55 @@ export default function MapView({ data, type, highlightPoint = null }: MapViewPr
     switch (type) {
       case 'ocean':
         return `
-          <div style="min-width: 180px; font-family: Inter, sans-serif;">
-            <h3 style="font-weight: 600; color: #0f172a; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0;">
+          <div style="min-width: 180px;">
+            <h3 style="font-weight: 600; margin-bottom: 8px;">
               ${item.location || item.station_name || 'Station'}
             </h3>
-            <div style="display: flex; flex-direction: column; gap: 6px; font-size: 13px;">
-              <div style="display: flex; justify-content: space-between;">
-                <span style="color: #64748b;">Temperature:</span>
-                <span style="font-weight: 500;">${parseFloat(item.temperature || 0).toFixed(1)}°C</span>
-              </div>
-              <div style="display: flex; justify-content: space-between;">
-                <span style="color: #64748b;">Salinity:</span>
-                <span style="font-weight: 500;">${parseFloat(item.salinity || 0).toFixed(1)} PSU</span>
-              </div>
-              <div style="display: flex; justify-content: space-between;">
-                <span style="color: #64748b;">pH:</span>
-                <span style="font-weight: 500;">${parseFloat(item.ph || 0).toFixed(2)}</span>
-              </div>
-              <div style="display: flex; justify-content: space-between;">
-                <span style="color: #64748b;">Oxygen:</span>
-                <span style="font-weight: 500;">${parseFloat(item.oxygen || 0).toFixed(1)} mg/L</span>
-              </div>
+            <div style="font-size: 13px;">
+              <div><strong>Temperature:</strong> ${parseFloat(item.temperature || 0).toFixed(1)}°C</div>
+              <div><strong>Salinity:</strong> ${parseFloat(item.salinity || 0).toFixed(1)} PSU</div>
+              <div><strong>pH:</strong> ${parseFloat(item.ph || 0).toFixed(2)}</div>
+              <div><strong>Oxygen:</strong> ${parseFloat(item.oxygen || 0).toFixed(1)} mg/L</div>
             </div>
           </div>
         `;
       case 'fisheries':
         return `
-          <div style="min-width: 180px; font-family: Inter, sans-serif;">
-            <h3 style="font-weight: 600; color: #0f172a; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0;">
-              ${item.location || 'Fishing Zone'}
+          <div style="min-width: 180px;">
+            <h3 style="font-weight: 600; margin-bottom: 8px;">
+              ${item.species || 'Unknown'}
             </h3>
-            <div style="display: flex; flex-direction: column; gap: 6px; font-size: 13px;">
-              <div style="display: flex; justify-content: space-between;">
-                <span style="color: #64748b;">Species:</span>
-                <span style="font-weight: 500;">${item.species || '-'}</span>
-              </div>
-              <div style="display: flex; justify-content: space-between;">
-                <span style="color: #64748b;">Abundance:</span>
-                <span style="font-weight: 500;">${parseInt(item.abundance || 0).toLocaleString()}</span>
-              </div>
-              <div style="display: flex; justify-content: space-between;">
-                <span style="color: #64748b;">Biomass:</span>
-                <span style="font-weight: 500;">${parseFloat(item.biomass || 0).toFixed(0)} kg</span>
-              </div>
+            <div style="font-size: 13px;">
+              <div><strong>Common Name:</strong> ${item.common_name || '-'}</div>
+              <div><strong>Location:</strong> ${item.location || item.region || '-'}</div>
+              <div><strong>Abundance:</strong> ${parseInt(item.abundance || 0).toLocaleString()}</div>
+              <div><strong>Biomass:</strong> ${parseFloat(item.biomass || 0).toFixed(0)} kg</div>
             </div>
           </div>
         `;
       case 'edna':
         return `
-          <div style="min-width: 180px; font-family: Inter, sans-serif;">
-            <h3 style="font-weight: 600; color: #0f172a; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0;">
-              ${item.location || 'Sample Site'}
+          <div style="min-width: 180px;">
+            <h3 style="font-weight: 600; margin-bottom: 8px;">
+              ${item.species || 'Unknown'}
             </h3>
-            <div style="display: flex; flex-direction: column; gap: 6px; font-size: 13px;">
-              <div style="display: flex; justify-content: space-between;">
-                <span style="color: #64748b;">Species:</span>
-                <span style="font-weight: 500;">${item.species || '-'}</span>
-              </div>
-              <div style="display: flex; justify-content: space-between;">
-                <span style="color: #64748b;">Concentration:</span>
-                <span style="font-weight: 500;">${parseFloat(item.concentration || 0).toFixed(2)} ng/L</span>
-              </div>
-              <div style="display: flex; justify-content: space-between;">
-                <span style="color: #64748b;">Confidence:</span>
-                <span style="font-weight: 500;">${item.confidence || '-'}%</span>
-              </div>
+            <div style="font-size: 13px;">
+              <div><strong>Location:</strong> ${item.location || '-'}</div>
+              <div><strong>Concentration:</strong> ${parseFloat(item.concentration || 0).toFixed(2)} ng/L</div>
+              <div><strong>Confidence:</strong> ${(parseFloat(item.confidence || 0) * 100).toFixed(0)}%</div>
+            </div>
+          </div>
+        `;
+      case 'species':
+        return `
+          <div style="min-width: 180px;">
+            <h3 style="font-weight: 600; margin-bottom: 8px;">
+              ${item.species || 'Unknown'}
+            </h3>
+            <div style="font-size: 13px;">
+              <div><strong>Location:</strong> ${item.locality || item.location || '-'}</div>
+              <div><strong>Records:</strong> ${item.count || 0}</div>
+              <div><strong>Coordinates:</strong> ${parseFloat(item.latitude).toFixed(4)}°, ${parseFloat(item.longitude).toFixed(4)}°</div>
             </div>
           </div>
         `;
