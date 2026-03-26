@@ -25,7 +25,7 @@ class HTTPClient:
             reraise=True,
         ):
             with attempt:
-                async with httpx.AsyncClient(timeout=self._timeout) as client:
+                async with httpx.AsyncClient(timeout=self._timeout, trust_env=False) as client:
                     response = await client.get(url, params=params, headers=headers)
                     if response.status_code >= 400:
                         raise ExternalAPIError(

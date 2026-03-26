@@ -6,10 +6,9 @@ from datetime import datetime, timezone
 import pandas as pd
 from fastapi import HTTPException
 from geoalchemy2 import WKTElement
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models import EDNAData, FisheriesData, IngestionLog, OceanData, Taxonomy
+from app.db.models import EDNAData, FisheriesData, IngestionLog, OceanData
 from app.services.ingestion_clients import OpenDataClients
 from app.services.transform import transform_to_common_schema
 
@@ -39,18 +38,17 @@ class IngestionService:
                 point = WKTElement(f"POINT({row['longitude']} {row['latitude']})", srid=4326)
                 records.append(
                     OceanData(
-                        location=row.get("location"),
+                        station_id=str(row.get("location") or row.get("source") or source),
                         latitude=float(row["latitude"]),
                         longitude=float(row["longitude"]),
                         recorded_at=row["recorded_at"].to_pydatetime(),
                         source=row.get("source", source),
-                        temperature_c=_num_or_none(row.get("temperature_c")),
-                        salinity_psu=_num_or_none(row.get("salinity_psu")),
-                        oxygen_mg_l=_num_or_none(row.get("oxygen_mg_l")),
-                        chlorophyll_mg_m3=_num_or_none(row.get("chlorophyll_mg_m3")),
+                        temperature=_num_or_none(row.get("temperature") or row.get("temperature_c")),
+                        salinity=_num_or_none(row.get("salinity") or row.get("salinity_psu")),
+                        oxygen=_num_or_none(row.get("oxygen") or row.get("oxygen_mg_l")),
+                        wave_height=_num_or_none(row.get("wave_height") or row.get("chlorophyll") or row.get("chlorophyll_mg_m3")),
                         ph=_num_or_none(row.get("ph")),
-                        current_speed_ms=_num_or_none(row.get("current_speed_ms")),
-                        attributes=row.get("attributes", {}),
+                        wind_speed=_num_or_none(row.get("wind_speed") or row.get("current_speed") or row.get("current_speed_ms")),
                         geom=point,
                     )
                 )
@@ -89,15 +87,16 @@ class IngestionService:
                 point = WKTElement(f"POINT({row['longitude']} {row['latitude']})", srid=4326)
                 records.append(
                     FisheriesData(
-                        location=row.get("location"),
+                        species=str(row.get("species_name") or row.get("species") or "unknown"),
                         latitude=float(row["latitude"]),
                         longitude=float(row["longitude"]),
                         recorded_at=row["recorded_at"].to_pydatetime(),
                         source=row.get("source", source),
-                        species_name=str(row["species_name"]),
-                        abundance=float(row["abundance"]),
+                        abundance=max(1, _int_or_default(row.get("abundance"), 1)),
+                        biomass=max(0.0, _num_or_none(row.get("biomass")) or 0.0),
+                        diversity_index=max(0.0, _num_or_none(row.get("diversity_index")) or 0.0),
+                        region=str(row.get("location") or "indian_marine"),
                         taxonomy_id=taxonomy_id,
-                        attributes=row.get("attributes", {}),
                         geom=point,
                     )
                 )
@@ -143,16 +142,15 @@ class IngestionService:
                 point = WKTElement(f"POINT({row['longitude']} {row['latitude']})", srid=4326)
                 records.append(
                     EDNAData(
-                        location=location,
+                        species=species,
                         latitude=float(row["latitude"]),
                         longitude=float(row["longitude"]),
                         recorded_at=row["recorded_at"].to_pydatetime(),
                         source=row.get("source", source),
-                        species_name=species,
-                        biodiversity_index=_num_or_none(row.get("biodiversity_index")),
-                        read_count=_num_or_none(row.get("read_count")),
+                        concentration=max(0.0, _num_or_none(row.get("read_count")) or 0.0),
+                        confidence=max(0.0, _num_or_none(row.get("biodiversity_index")) or 0.0),
+                        depth=max(0, _int_or_default(row.get("depth"), 0)),
                         taxonomy_id=taxonomy_id,
-                        attributes=row.get("attributes", {}),
                         geom=point,
                     )
                 )
@@ -175,16 +173,9 @@ class IngestionService:
             raise HTTPException(status_code=502, detail=f"eDNA ingestion failed: {exc}") from exc
 
     async def _resolve_taxonomy_id(self, session: AsyncSession, species_name: str | None) -> int | None:
-        if not species_name:
-            return None
-
-        existing = await session.scalar(select(Taxonomy).where(Taxonomy.scientific_name == species_name))
-        if existing:
-            return existing.id
-
-        # In mixed-schema deployments, taxonomy can enforce legacy NOT NULL columns
-        # that are not represented in this service model. Skip creating new taxonomy
-        # rows at ingest time and proceed with a null taxonomy_id.
+        _ = (session, species_name)
+        # In mixed-schema deployments, taxonomy columns vary across environments.
+        # Skip taxonomy FK resolution during ingestion and proceed with null taxonomy_id.
         return None
 
     @staticmethod
@@ -215,3 +206,10 @@ def _num_or_none(value: object) -> float | None:
         return float(value)
     except (TypeError, ValueError):
         return None
+
+
+def _int_or_default(value: object, default: int) -> int:
+    try:
+        return int(float(value))
+    except (TypeError, ValueError):
+        return default

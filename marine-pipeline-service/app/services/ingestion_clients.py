@@ -4,7 +4,10 @@ import asyncio
 from datetime import datetime, timezone
 from io import StringIO
 import logging
+import os
+from pathlib import Path
 
+import certifi
 import pandas as pd
 from pygbif import occurrences, species
 
@@ -13,6 +16,15 @@ from app.core.http import HTTPClient
 
 
 logger = logging.getLogger(__name__)
+
+
+def _ensure_valid_ca_bundle_env() -> None:
+    """Ensure requests-based clients do not use a broken CA bundle path from env."""
+    valid_bundle = certifi.where()
+    for name in ("REQUESTS_CA_BUNDLE", "CURL_CA_BUNDLE", "SSL_CERT_FILE"):
+        current = os.environ.get(name)
+        if current and not Path(current).exists():
+            os.environ[name] = valid_bundle
 
 
 INDIAN_MARINE_BOUNDS = {
@@ -55,6 +67,7 @@ def _parse_station_list(raw_value: str) -> list[tuple[str, float, float]]:
 
 class OpenDataClients:
     def __init__(self, http_client: HTTPClient | None = None) -> None:
+        _ensure_valid_ca_bundle_env()
         self.settings = get_settings()
         self.http = http_client or HTTPClient()
 

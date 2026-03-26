@@ -1,9 +1,10 @@
 import json
+import os
 import urllib.error
 import urllib.parse
 import urllib.request
 
-BASE = "http://127.0.0.1:8090"
+BASE = os.environ.get("PIPELINE_BASE_URL", "http://127.0.0.1:8090")
 
 
 def call(method: str, path: str, params: dict | None = None, timeout: int = 30) -> dict:
