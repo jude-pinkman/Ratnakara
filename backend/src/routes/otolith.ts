@@ -4,6 +4,7 @@ import multer from 'multer';
 import { getPostgresPool } from '../db/postgres.js';
 
 const router = Router();
+const otolithReviewThreshold = Number(process.env.OTOLITH_REVIEW_THRESHOLD || 0.85);
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -23,14 +24,33 @@ async function callMLService(imageBuffer: Buffer, filename: string, mimeType: st
   const fileBlob = new BlobCtor([imageBuffer], { type: mimeType });
   formData.append('image', fileBlob, filename);
 
-  const response = await fetch(`${mlServiceUrl}/predict/otolith`, {
-    method: 'POST',
-    body: formData,
-  });
+  let response: globalThis.Response;
+  try {
+    response = await fetch(`${mlServiceUrl}/predict/otolith`, {
+      method: 'POST',
+      body: formData,
+    });
+  } catch (error: any) {
+    const upstreamError: any = new Error(
+      `ML service unreachable at ${mlServiceUrl}. Start ml-service (python main.py) or set ML_SERVICE_URL correctly.`
+    );
+    upstreamError.status = 503;
+    upstreamError.cause = error;
+    throw upstreamError;
+  }
 
   if (!response.ok) {
-    const detail = await response.text();
-    throw new Error(`ML otolith prediction failed (${response.status}): ${detail}`);
+    let detail = '';
+    try {
+      const payload: any = await response.json();
+      detail = payload?.detail || payload?.error || JSON.stringify(payload);
+    } catch {
+      detail = await response.text();
+    }
+
+    const upstreamError: any = new Error(`ML otolith prediction failed (${response.status}): ${detail}`);
+    upstreamError.status = response.status;
+    throw upstreamError;
   }
 
   return response.json();
@@ -60,6 +80,10 @@ router.post('/predict', upload.single('image'), async (req: Request, res: Respon
     const mlPrediction: any = await callMLService(req.file.buffer, req.file.originalname, req.file.mimetype);
     const species = String(mlPrediction.species || '').trim();
     const confidence = Number(mlPrediction.confidence || 0);
+    const requiresReview =
+      typeof mlPrediction.requires_review === 'boolean'
+        ? mlPrediction.requires_review || confidence < otolithReviewThreshold
+        : confidence < otolithReviewThreshold;
 
     if (!species) {
       return res.status(502).json({ error: 'ML service returned empty species' });
@@ -70,6 +94,11 @@ router.post('/predict', upload.single('image'), async (req: Request, res: Respon
     return res.json({
       species,
       confidence,
+      requires_review: requiresReview,
+      review_threshold: otolithReviewThreshold,
+      review_note: requiresReview
+        ? `Low-confidence prediction. Confidence ${(confidence * 100).toFixed(2)}% is below review threshold ${(otolithReviewThreshold * 100).toFixed(0)}%.`
+        : null,
       taxonomy: taxonomy
         ? {
             kingdom: taxonomy.kingdom,
@@ -85,7 +114,8 @@ router.post('/predict', upload.single('image'), async (req: Request, res: Respon
     });
   } catch (error: any) {
     console.error('Otolith prediction route error:', error);
-    return res.status(500).json({ error: error.message || 'Otolith prediction failed' });
+    const status = Number(error?.status) || 500;
+    return res.status(status).json({ error: error.message || 'Otolith prediction failed' });
   }
 });
 

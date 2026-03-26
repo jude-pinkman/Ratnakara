@@ -131,6 +131,23 @@ ML service endpoint:
 
 1. ML API: `http://localhost:8000`
 
+Otolith identification (`POST /api/otolith/predict`) depends on this ML service.
+If your ML service runs on a different host/port, set backend env var `ML_SERVICE_URL`
+before starting `backend` (example: `http://127.0.0.1:8000`).
+For low-confidence handling, set backend env var `OTOLITH_REVIEW_THRESHOLD`
+(default `0.85`). Predictions below this value are flagged as "needs review" in UI.
+
+To improve otolith confidence scores, retrain the otolith classifier and refresh model artifacts:
+
+```powershell
+Set-Location ml-service
+venv\Scripts\Activate.ps1
+python train\train_otolith_cnn.py --head-epochs 12 --finetune-epochs 10 --unfreeze-last-n 40
+python train\build_otolith_embedding_index.py
+```
+
+Then restart `ml-service` and `backend`.
+
 ## Option C: Add Marine Pipeline Service
 
 Terminal 4:

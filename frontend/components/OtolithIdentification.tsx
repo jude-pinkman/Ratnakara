@@ -1,13 +1,16 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Upload, Fish, AlertCircle } from 'lucide-react';
+import { Upload, Fish, AlertCircle, AlertTriangle } from 'lucide-react';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 type PredictionResult = {
   species: string;
   confidence: number;
+  requires_review?: boolean;
+  review_threshold?: number;
+  review_note?: string | null;
   taxonomy: {
     kingdom?: string | null;
     phylum?: string | null;
@@ -46,7 +49,15 @@ export default function OtolithIdentification() {
         body: formData,
       });
 
-      const payload = await response.json();
+      let payload: any = null;
+      const contentType = response.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        payload = await response.json();
+      } else {
+        const text = await response.text();
+        payload = { error: text || 'Prediction failed' };
+      }
+
       if (!response.ok) {
         throw new Error(payload.error || 'Prediction failed');
       }
@@ -123,6 +134,15 @@ export default function OtolithIdentification() {
             <p className="text-base font-semibold text-emerald-900 italic">{result.species}</p>
             <p className="text-sm font-medium text-emerald-700">Confidence: {(result.confidence * 100).toFixed(2)}%</p>
           </div>
+
+          {result.requires_review && (
+            <div className="mt-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+              <AlertTriangle className="mt-0.5 h-4 w-4" />
+              <span>
+                {result.review_note || 'Low-confidence prediction. Manual verification is recommended.'}
+              </span>
+            </div>
+          )}
 
           {result.taxonomy && (
             <div className="mt-3 grid gap-2 text-sm text-gray-700 md:grid-cols-2">
